@@ -1,0 +1,228 @@
+(*
+  =========================================================
+  PIPE TEST LANGUAGE GRAMMAR (EBNF + INDENT/DEDENT)
+  =========================================================
+
+  Lexical layer must provide:
+    - NL tokens for logical end-of-line
+    - INDENT/DEDENT tokens based on leading spaces (tabs disallowed)
+    - comments (# ... end of line) removed before tokenization (except in strings)
+*)
+
+Program         ::= { (TopStmt | NL) } EOF ;
+
+TopStmt         ::= SettingStmt NL
+                  | ImportStmt NL
+                  | LetStmt NL
+                  | ReqDecl
+                  | FlowDecl ;
+
+(*
+  -------------------------
+  Settings / Imports / Vars
+  -------------------------
+*)
+
+SettingStmt     ::= "base" StringLit
+                  | "timeout" DurationLit ;
+
+ImportStmt      ::= "import" StringLit ;
+
+LetStmt         ::= "let" Ident "=" Expr ;
+
+(*
+  -------------------------
+  Request Declarations
+  -------------------------
+  Inheritance: req Child(Parent):
+*)
+
+ReqDecl         ::= "req" Ident [ "(" Ident ")" ] ":" NL
+                    INDENT
+                      { (ReqLine | NL) }
+                    DEDENT ;
+
+ReqLine         ::= HttpLine NL
+                  | Directive NL
+                  | HookBlock
+                  | AssertLine NL
+                  | LetStmt NL ;
+
+HttpLine        ::= HttpMethod WS PathOrUrl ;
+
+HttpMethod      ::= "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS" ;
+
+(*
+  PathOrUrl is tokenized as PATH (see lexer notes).
+  It supports path params like /groups/:group_id/orders
+*)
+PathOrUrl       ::= PATH ;
+
+Directive       ::= JsonDirective
+                  | HeaderDirective
+                  | QueryDirective
+                  | AuthDirective ;
+
+JsonDirective   ::= "json" ObjectLit ;
+
+HeaderDirective ::= "header" Key "=" Expr ;
+QueryDirective  ::= "query"  Key "=" Expr ;
+
+AuthDirective   ::= "auth" "bearer" Expr ;
+
+Key             ::= Ident | BareKey | StringLit ;
+
+AssertLine      ::= "?" Expr ;
+
+(*
+  -------------------------
+  Hooks (Optional)
+  -------------------------
+  Syntax:
+    pre hook { ... }
+    post hook { ... }
+  Hook body is brace-delimited; inside braces indentation tokens are ignored.
+*)
+
+HookBlock       ::= HookKind WS "hook" WS "{" HookStmtList "}" NL ;
+
+HookKind        ::= "pre" | "post" ;
+
+HookStmtList    ::= { (HookStmt (StmtSep)?) | StmtSep } ;
+
+StmtSep         ::= ";" | NL ;
+
+HookStmt        ::= LetStmt
+                  | AssignStmt
+                  | ExprStmt ;
+
+AssignStmt      ::= LValue "=" Expr ;
+
+ExprStmt        ::= Expr ;
+
+(*
+  LValue: allow assignments like:
+    req.header["X"] = uuid()
+    req.query.page  = 2
+  No function calls on the left side.
+*)
+LValue          ::= LPrimary { LPostfix } ;
+LPrimary        ::= Ident | "req" | "res" | "$" ;
+LPostfix        ::= "." Ident
+                  | "[" Expr "]" ;
+
+(*
+  -------------------------
+  Flow Declarations
+  -------------------------
+  Required shape:
+    flow "name":
+      (optional let overrides...)        <-- only let lines here
+      step -> step -> step              <-- exactly one chain line
+      ? assertions...                   <-- only assertions after chain
+
+  Step may be aliased: listOrders : orders1
+*)
+
+FlowDecl        ::= "flow" StringLit ":" NL
+                    INDENT
+                      { (FlowPreludeLine | NL) }
+                      FlowChainLine NL
+                      { (FlowAssertLine | NL) }
+                    DEDENT ;
+
+FlowPreludeLine ::= LetStmt NL ;
+
+FlowChainLine   ::= FlowStepRef { WS? "->" WS? FlowStepRef } ;
+                    (* NOTE: semantic rule may require at least one "->" *)
+
+FlowStepRef     ::= Ident [ WS? ":" WS? Ident ] ;
+
+FlowAssertLine  ::= "?" Expr NL ;
+
+(*
+  -------------------------
+  Expressions (Pratt/precedence friendly)
+  -------------------------
+  Supports:
+    - boolean ops: and/or/not
+    - comparisons: == != < <= > >=
+    - membership: in
+    - containment: contains
+    - regex match: ~
+    - arithmetic: + - * / %
+    - calls: fn(a,b)
+    - indexing: x[0], x["k"]
+    - field access: x.y.z
+    - special: $ (current JSON root in a request)
+    - flow access: orders1.res.items (parsed as identifiers + dots)
+*)
+
+Expr            ::= OrExpr ;
+
+OrExpr          ::= AndExpr { WS? "or" WS? AndExpr } ;
+AndExpr         ::= NotExpr { WS? "and" WS? NotExpr } ;
+
+NotExpr         ::= [ "not" WS? ] CompareExpr ;
+
+CompareExpr     ::= AddExpr { WS? CompareOp WS? AddExpr } ;
+
+CompareOp       ::= "==" | "!=" | "<" | "<=" | ">" | ">="
+                  | "in" | "contains" | "~" ;
+
+AddExpr         ::= MulExpr { WS? AddOp WS? MulExpr } ;
+AddOp           ::= "+" | "-" ;
+
+MulExpr         ::= UnaryExpr { WS? MulOp WS? UnaryExpr } ;
+MulOp           ::= "*" | "/" | "%" ;
+
+UnaryExpr       ::= ( "+" | "-" ) WS? UnaryExpr
+                  | PostfixExpr ;
+
+PostfixExpr     ::= Primary { Postfix } ;
+
+Postfix         ::= Call
+                  | Index
+                  | Field ;
+
+Call            ::= "(" [ ArgList ] ")" ;
+ArgList         ::= Expr { WS? "," WS? Expr } [ WS? "," ] ;
+
+Index           ::= "[" Expr "]" ;
+Field           ::= "." Ident ;
+
+Primary         ::= Literal
+                  | "$"
+                  | Ident
+                  | "(" Expr ")"
+                  | ArrayLit
+                  | ObjectLit ;
+
+Literal         ::= StringLit
+                  | NumberLit
+                  | BoolLit
+                  | "null" ;
+
+BoolLit         ::= "true" | "false" ;
+
+ArrayLit        ::= "[" [ Expr { WS? "," WS? Expr } [ WS? "," ] ] "]" ;
+
+ObjectLit       ::= "{" [ ObjPair { WS? "," WS? ObjPair } [ WS? "," ] ] "}" ;
+ObjPair         ::= ObjKey WS? ":" WS? Expr ;
+ObjKey          ::= Ident | StringLit ;
+
+(*
+  -------------------------
+  Lexical Tokens (recommended)
+  -------------------------
+  Ident        : [A-Za-z_][A-Za-z0-9_]*
+  BareKey      : [A-Za-z0-9_-]+               (for headers like X-Trace)
+  NumberLit    : [0-9]+ ( "." [0-9]+ )?
+  DurationLit  : [0-9]+ ( "." [0-9]+ )? ( "ms" | "s" | "m" | "h" | "d" )
+  StringLit    : Double-quoted with escapes OR backtick raw string
+  PATH         : ( "/" | "http://" | "https://" ) [^ \t\r\n#]+
+
+  WS           : spaces/tabs within a line (ignored by parser except where shown)
+  NL           : logical newline (after stripping comments + line continuations if any)
+  INDENT/DEDENT: produced by indentation scanner after lines ending in ":" introduce blocks.
+*)
