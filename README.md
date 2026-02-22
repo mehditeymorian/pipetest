@@ -15,6 +15,7 @@ This repository currently contains the language grammar and design notes. The ne
 - `docs/rule-sets.md` — lexer and semantic validation rules
 - `docs/implementation-roadmap.md` — concrete implementation plan for parser/compiler/executor
 - `docs/cli-spec.md` — command behavior for `eval` and `run`
+- `docs/reporting.md` — report format defaults, mapping strategy, and CI integration snippets
 
 ## Target commands
 
