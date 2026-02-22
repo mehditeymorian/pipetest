@@ -35,6 +35,22 @@ Compiles and executes flows:
 - evaluates request-level and flow-level assertions
 - emits CI/CD compatible report output for GitHub Actions and GitLab CI
 
+
+## Implementation workflow (doc-first)
+
+To keep implementation aligned with the project specs, this repo now includes:
+
+- `AGENTS.md` — operating rules for doc-first, milestone-based implementation
+- `.codex/config.toml` — repo-scoped Codex execution defaults
+- `EXECPLAN.template.md` — template used to create milestone plans from `/docs`
+- `QUESTIONS.md` — capture ambiguities instead of guessing behavior
+
+Recommended execution loop:
+
+1. Generate `EXECPLAN.md` from `/docs/**` + `README.md`.
+2. Execute one milestone at a time (M0, M1, M2, ...).
+3. Run verification commands and keep the tree buildable between milestones.
+
 ## Suggested first build order
 
 1. Lexer with INDENT/DEDENT + hook/object brace handling
