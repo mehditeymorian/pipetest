@@ -1,251 +1,257 @@
-# Implementation roadmap: parser, compiler, executor
+# Implementation roadmap: phased delivery and module boundaries
 
-This plan translates the existing grammar and design docs into an executable implementation backlog.
+This roadmap translates `grammar.ebnf` and the design docs into a phased build plan with explicit package ownership, acceptance criteria, and fixture strategy.
 
-## 1) Deliverables
+## 1) Proposed package layout and ownership
 
-Build a `pipetest` CLI with:
+```text
+cmd/pipetest
+internal/lexer
+internal/parser
+internal/ast
+internal/compiler
+internal/runtime
+internal/report
+testdata/
+```
 
-- `pipetest eval program.pt`
-- `pipetest run program.pt`
+### `cmd/pipetest`
+- CLI entrypoint and command wiring (`eval`, `run`, future flags).
+- Owns process exit codes and orchestration across compile/execute/report pipelines.
 
-Core components:
+### `internal/lexer`
+- Converts source into tokens with source spans.
+- Owns layout-sensitive behavior: logical `NL`, `INDENT`, `DEDENT`, tab rejection, comment stripping, and hook brace mode.
 
-1. **Lexer** (layout-aware tokenization)
-2. **Parser** (AST generation)
-3. **Compiler** (multi-pass semantic analysis + execution plan)
-4. **Executor** (HTTP runtime + assertions + variable scopes)
-5. **Reporters** (machine-friendly CI output)
+### `internal/parser`
+- Converts token stream into strongly typed AST.
+- Owns parser entry points for top-level forms, request/flow blocks, hook statements, and expression parsing.
+
+### `internal/ast`
+- Defines immutable syntax tree node types and span metadata.
+- Owns node contracts consumed by semantic passes and runtime planner.
+
+### `internal/compiler` (semantic passes + IR)
+- Runs ordered semantic passes against AST.
+- Produces validated IR / execution plan with resolved requests, inheritance, flow chains, and variable availability facts.
+- Owns diagnostic schema and stable semantic error codes.
+
+### `internal/runtime` (HTTP executor + hooks + env/functions)
+- Executes validated plans flow-by-flow and step-by-step.
+- Owns hook evaluation contexts (`req`, `res`, `$`, user vars), HTTP transport integration, expression runtime, and function/env bindings.
+
+### `internal/report` (JUnit/GitHub/GitLab output)
+- Converts compile/runtime results to machine outputs (JUnit, JSON, GitHub/GitLab-friendly summaries).
+- Owns per-flow and per-assertion result mapping.
 
 ---
 
-## 2) Architecture overview
+## 2) Phase plan
 
+## Phase 1 — lexer/token stream + indentation/hook handling
+
+**Scope**
+- Implement lexical scanner and token model.
+- Support `PATH`, literals, identifiers, operators, keywords, and punctuation.
+- Implement layout engine (`NL`, `INDENT`, `DEDENT`) and hook-body brace mode where indentation tokens are ignored.
+
+**Module boundaries**
+- `internal/lexer` only; no AST coupling.
+- Output contract: `[]Token` + `[]LexError`.
+
+**Acceptance criteria**
+- Handles nested blocks and emits correct `INDENT`/`DEDENT` for `req`/`flow` bodies.
+- Rejects tab indentation and malformed dedent stacks.
+- Tracks balanced delimiters and hook braces (`pre hook { ... }`, `post hook { ... }`).
+- Emits accurate source spans for all tokens and diagnostics.
+
+**Sample fixtures (`testdata/lexer/`)**
 ```text
-source .pt file(s)
-   -> import resolver
-   -> lexer
-   -> parser (AST)
-   -> compiler semantic passes
-   -> validated execution plan
-   -> runtime executor
-   -> result model
-   -> reporters (stdout summary + JSON + JUnit)
+testdata/lexer/
+  valid/
+    basic-top-level.pt
+    request-with-directives.pt
+    hook-block-separators.pt
+    flow-with-chain.pt
+  invalid/
+    tab-indentation.pt
+    invalid-dedent.pt
+    unterminated-string.pt
+    unclosed-brace-in-hook.pt
+  golden/
+    request-with-directives.tokens.json
+    flow-with-chain.tokens.json
 ```
 
-Suggested package structure:
+## Phase 2 — parser + AST
+
+**Scope**
+- Build recursive-descent parser for statements/blocks and Pratt parser for expressions.
+- Define AST nodes and parser entry points in `internal/ast` and `internal/parser`.
+
+**Module boundaries**
+- `internal/parser` depends on `internal/lexer` token contracts.
+- `internal/ast` remains parser/runtime agnostic data model.
+
+**Acceptance criteria**
+- Parses all top-level forms (`base`, `timeout`, `import`, `let`, `req`, `flow`).
+- Enforces request-line forms (`HttpLine`, directives, hooks, asserts, lets).
+- Enforces flow shape (prelude lets, exactly one chain line, post-chain assertions).
+- Preserves spans on every AST node for later semantic diagnostics.
+
+**Sample fixtures (`testdata/parser/`)**
+```text
+testdata/parser/
+  valid/
+    minimal-program.pt
+    request-inheritance.pt
+    flow-with-aliases.pt
+    hook-pre-post.pt
+  invalid/
+    missing-colon-after-req.pt
+    malformed-flow-chain.pt
+    hook-missing-rbrace.pt
+    bad-expression-precedence.pt
+  golden/
+    minimal-program.ast.json
+    flow-with-aliases.ast.json
+```
+
+## Phase 3 — semantic compiler passes and error codes
+
+**Scope**
+- Implement compiler pipeline with ordered passes and stable diagnostic codes.
+- Build IR/execution plan from validated AST.
+
+**Module boundaries**
+- `internal/compiler` consumes `internal/ast` and returns plan + diagnostics.
+- No HTTP execution in this phase.
+
+**Acceptance criteria**
+- Pass ordering is deterministic and short-circuits only on unrecoverable graph/parser corruption.
+- Error codes are documented and stable (e.g., `E100x` import/symbol, `E200x` request semantics, `E300x` flow/vars).
+- Produces execution plan with resolved inheritance and flow steps.
+
+**Sample fixtures (`testdata/compiler/`)**
+```text
+testdata/compiler/
+  valid/
+    compile-single-flow.pt
+    compile-multi-request-inheritance.pt
+  invalid/
+    duplicate-request-name.pt
+    import-cycle-a.pt
+    import-cycle-b.pt
+    unknown-request-in-flow.pt
+    undefined-variable-in-path.pt
+  golden/
+    compile-single-flow.plan.json
+    duplicate-request-name.errors.json
+    undefined-variable-in-path.errors.json
+```
+
+## Phase 4 — runtime execution engine
+
+**Scope**
+- Implement plan executor with request materialization, hook execution, HTTP dispatch, assertion evaluation, and variable/binding propagation.
+
+**Module boundaries**
+- `internal/runtime` consumes compiler plan contracts only.
+- Optional internal adapter boundary for HTTP client mocking.
+
+**Acceptance criteria**
+- Executes flow chain order exactly as compiled.
+- Correctly handles pre-hook mutation of `req` and post-hook access to `res`/`$`.
+- Persists request-level `let` outputs into subsequent flow scope.
+- Emits typed runtime failures (transport, hook eval, assertion failures).
+
+**Sample fixtures (`testdata/runtime/`)**
+```text
+testdata/runtime/
+  fixtures/
+    echo-server-responses.json
+  valid/
+    simple-get-flow.pt
+    chained-binding-flow.pt
+    post-hook-assertions.pt
+  invalid/
+    missing-path-var-at-runtime.pt
+    failing-assertion.pt
+    hook-runtime-error.pt
+  golden/
+    simple-get-flow.result.json
+    failing-assertion.result.json
+```
+
+## Phase 5 — reporting + CLI integration
+
+**Scope**
+- Integrate `cmd/pipetest` with compiler/runtime.
+- Emit human summary + machine reports for CI.
+
+**Module boundaries**
+- `cmd/pipetest` orchestrates.
+- `internal/report` provides format-specific encoders.
+
+**Acceptance criteria**
+- `pipetest eval <file>` compiles and exits non-zero on semantic errors.
+- `pipetest run <file>` compiles + executes and exits non-zero on runtime/assertion failures.
+- Produces JUnit + JSON artifacts with deterministic naming and per-flow testcase mapping.
+- Output works with GitHub Actions and GitLab CI ingestion patterns.
+
+**Sample fixtures (`testdata/report/`, `testdata/cli/`)**
+```text
+testdata/report/
+  golden/
+    run-success.junit.xml
+    run-success.report.json
+    run-failure.junit.xml
+
+testdata/cli/
+  cases/
+    eval-semantic-error.pt
+    run-runtime-failure.pt
+  golden/
+    eval-semantic-error.stdout.txt
+    run-runtime-failure.stdout.txt
+```
+
+---
+
+## 3) Grammar-to-parser and semantics cross-reference
+
+| Grammar construct (`grammar.ebnf`) | Parser entry point | Semantic pass name (internal/compiler) |
+|---|---|---|
+| `Program`, `TopStmt` | `parseProgram`, `parseTopStmt` | `Pass00ImportGraph`, `Pass01Symbols` |
+| `SettingStmt` (`base`, `timeout`) | `parseSettingStmt` | `Pass01Symbols` + `Pass03RequestValidity` (global config constraints) |
+| `ImportStmt` | `parseImportStmt` | `Pass00ImportGraph` |
+| `LetStmt` (global/request/flow prelude/hook) | `parseLetStmt` | `Pass06VariableAvailability` + `Pass04HookRestrictions` |
+| `ReqDecl`, `ReqLine` | `parseReqDecl`, `parseReqLine` | `Pass02RequestInheritance`, `Pass03RequestValidity` |
+| `HttpLine`, `PathOrUrl` | `parseHttpLine` | `Pass03RequestValidity`, `Pass06VariableAvailability` (path vars) |
+| `Directive` (`json`, `header`, `query`, `auth`) | `parseDirective*` | `Pass03RequestValidity`, `Pass06VariableAvailability` |
+| `HookBlock`, `HookStmtList`, `AssignStmt`, `LValue` | `parseHookBlock`, `parseHookStmt`, `parseAssignStmt`, `parseLValue` | `Pass04HookRestrictions`, `Pass06VariableAvailability` |
+| `FlowDecl`, `FlowPreludeLine`, `FlowChainLine`, `FlowStepRef`, `FlowAssertLine` | `parseFlowDecl`, `parseFlowChainLine`, `parseFlowStepRef` | `Pass05FlowStructureBindings`, `Pass06VariableAvailability` |
+| `Expr` family (`OrExpr`..`Primary`, postfix ops) | `parseExpr` (Pratt, bp table) | `Pass06VariableAvailability` + runtime expression checks |
+
+> Suggested compiler pass order: `Pass00ImportGraph -> Pass01Symbols -> Pass02RequestInheritance -> Pass03RequestValidity -> Pass04HookRestrictions -> Pass05FlowStructureBindings -> Pass06VariableAvailability`.
+
+---
+
+## 4) Recommended `testdata/` top-level structure
 
 ```text
-internal/
+testdata/
   lexer/
   parser/
-  ast/
   compiler/
-    imports/
-    symbols/
-    inheritance/
-    flowcheck/
-    varcheck/
   runtime/
-    httpclient/
-    hooks/
-    assert/
   report/
-cmd/pipetest/
+  cli/
+  shared/
+    imports/
+    schemas/
 ```
 
----
-
-## 3) Parser plan
-
-### 3.1 Lexer milestones
-
-Implement a deterministic lexer aligned to `grammar.ebnf` and `docs/rule-sets.md`:
-
-- newline normalization (`\n`)
-- comment stripping outside strings
-- `INDENT`/`DEDENT` generation
-- `PATH` token support with `:path_param`
-- hook brace tracking (`pre hook {}`, `post hook {}`)
-- expression grouping depth (`()`, `[]`, `{}`)
-
-Errors to ship immediately:
-
-- invalid dedent
-- tab indentation usage
-- unterminated strings
-- brace/paren mismatch
-
-### 3.2 Parser milestones
-
-Use recursive descent for statements and Pratt for expressions.
-
-1. Parse top-level declarations: `base`, `timeout`, `import`, `let`, `req`, `flow`
-2. Parse request body lines:
-   - HTTP line
-   - directives (`json`, `header`, `query`, `auth bearer`)
-   - hooks
-   - request assertions and lets
-3. Parse flow with strict zones:
-   - prelude (`let` only)
-   - one chain line (`->` required)
-   - postlude (assertions only)
-4. Parse postfix expressions (call, index, field)
-
-Parser output: AST with source spans for all nodes.
-
----
-
-## 4) Compiler plan (semantic analysis)
-
-Implement semantic checks as ordered passes to maximize error quality.
-
-### Pass 0 — import graph
-
-- resolve relative imports
-- detect missing files and cycles
-- disallow flows in imported files
-
-### Pass 1 — symbol tables
-
-- collect requests globally
-- collect flow names in entry file
-- enforce uniqueness and reserved-name constraints
-
-### Pass 2 — request inheritance
-
-- validate parent existence
-- detect cycles
-- build expanded request templates (child overrides parent)
-
-### Pass 3 — request validity
-
-- single HTTP line per request
-- duplicate hook constraints
-- body/directive multiplicity constraints
-
-### Pass 4 — hook restrictions
-
-- pre-hook cannot reference `res` or `$`
-- post-hook cannot assign `res`
-- enforce allowed lvalue targets
-
-### Pass 5 — flow structure + bindings
-
-- ensure chain exists and uses `->`
-- ensure all referenced requests exist
-- ensure binding uniqueness (alias collisions)
-
-### Pass 6 — variable availability
-
-Per-flow definite-assignment analysis:
-
-- seed with global lets
-- apply flow prelude lets
-- validate required vars per request (expressions + path params)
-- add vars from request-level lets after each step
-- validate flow assertions (vars + bindings)
-
-Compiler output: validated `ExecutionPlan` with resolved requests and flow steps.
-
----
-
-## 5) Executor plan
-
-### 5.1 Runtime model
-
-For each flow execution:
-
-- `FlowScope` map for variables
-- `Bindings` map (step binding -> result snapshot)
-- request context (`req` mutable draft, `res/$/status/header` after HTTP)
-
-### 5.2 Request execution sequence
-
-For each step:
-
-1. materialize request template + inherited fields
-2. evaluate path params and directive expressions
-3. run pre-hook
-4. send HTTP request
-5. bind response context
-6. run post-hook
-7. execute request assertions and lets in source order
-8. save step binding result for flow assertions
-
-### 5.3 Runtime failures
-
-Return typed runtime errors:
-
-- missing path variable
-- HTTP/transport failure
-- assertion failure
-- hook evaluation failure
-
-Continue-on-failure policy (recommended default): fail current flow fast; continue next flow.
-
----
-
-## 6) CLI behavior plan
-
-### `pipetest eval program.pt`
-
-- compile only
-- print diagnostics
-- non-zero exit if any diagnostics of severity error
-
-### `pipetest run program.pt`
-
-- compile + execute
-- print human summary
-- write machine report artifacts (default directory configurable)
-- non-zero exit if compile errors, runtime errors, or assertion failures
-
----
-
-## 7) CI/CD reporting plan
-
-Generate at least two formats:
-
-1. **JSON** (`pipetest-report.json`) for custom tooling
-2. **JUnit XML** (`pipetest-junit.xml`) for CI test ingestion
-
-Recommended mapping:
-
-- each flow -> testsuite
-- each request assertion + flow assertion -> testcase
-- assertion/runtime failures -> testcase failure/error
-
-GitHub Actions and GitLab CI can both ingest JUnit XML.
-
----
-
-## 8) Iteration plan
-
-### Phase 1 (MVP compile)
-
-- lexer/parser
-- AST + diagnostics
-- `eval` command functional
-
-### Phase 2 (MVP run)
-
-- compiler passes
-- basic executor (no retries)
-- assertions and variable propagation
-- JSON report
-
-### Phase 3 (CI-grade)
-
-- JUnit output
-- improved diagnostics with source spans and hints
-- stable exit code matrix and docs
-
----
-
-## 9) Definition of done
-
-- `pipetest eval` validates syntax + imports + semantics with precise diagnostics
-- `pipetest run` executes flows and evaluates all assertions
-- report artifacts produced and usable in GitHub Actions / GitLab CI
-- docs include CLI spec, report schema, and examples
+- `valid/` and `invalid/` source fixtures for each phase.
+- `golden/` expected token/AST/plan/report outputs.
+- `shared/imports/` supports import graph/cycle scenarios reused across compiler and CLI tests.
