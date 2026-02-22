@@ -1,0 +1,14 @@
+# .codex/config.toml
+
+[sandbox]
+enabled = true
+
+[approvals]
+# Let Codex run safe commands; it should ask before destructive ops.
+policy = "on-request"
+
+[workflow]
+require_tests = true
+
+[logging]
+reasoning_summary = "brief"
