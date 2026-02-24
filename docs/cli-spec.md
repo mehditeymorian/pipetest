@@ -1,8 +1,11 @@
 # CLI specification
 
-This document defines expected behavior for the initial `pipetest` command-line interface.
+This document defines expected behavior for the `pipetest` command-line interface.
+`pipetest` is a scripting language for testing APIs and API flows. It is a general-purpose tool intended for public use, and it does not expose an API or SDK.
 
 ## Commands
+
+`pipetest` has two commands: `eval` for static evaluation and `run` for executing scripts.
 
 ## `pipetest eval <program.pt>`
 

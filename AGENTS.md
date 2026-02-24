@@ -34,7 +34,7 @@ Implement this project strictly based on repository documentation, keeping the r
 - Structure:
   - /cmd/<service>/main.go for entrypoints
   - /internal/<domain|app|infra>/... for non-public packages
-  - /pkg/... only if truly public
+  - / only if truly public
 - Errors: wrap with `%w`, prefer sentinel errors for domain cases.
 - Context: pass `context.Context` through I/O boundaries.
 - Logging: use a single logger abstraction; avoid global state.

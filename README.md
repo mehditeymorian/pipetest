@@ -1,6 +1,8 @@
 # pipetest
 
-`pipetest` is a DSL-driven API test tool with two primary user commands:
+`pipetest` is a scripting language for testing APIs and API flows. It is a general-purpose tool intended for public use, and it does not expose an API or SDK.
+
+`pipetest` has two primary user commands:
 
 - `pipetest eval program.pt`
 - `pipetest run program.pt`
