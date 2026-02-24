@@ -71,6 +71,11 @@ func (l *Lexer) Errors() []LexError {
 	return l.errs
 }
 
+// Path returns the source path for diagnostics.
+func (l *Lexer) Path() string {
+	return l.path
+}
+
 // Next returns the next token in the stream.
 func (l *Lexer) Next() Token {
 	if len(l.queue) > 0 {

@@ -1,0 +1,525 @@
+{
+  "type": "Program",
+  "span": {
+    "start": {
+      "offset": 0,
+      "line": 1,
+      "column": 1
+    },
+    "end": {
+      "offset": 213,
+      "line": 15,
+      "column": 1
+    }
+  },
+  "fields": {
+    "stmts": [
+      {
+        "type": "SettingStmt",
+        "span": {
+          "start": {
+            "offset": 0,
+            "line": 1,
+            "column": 1
+          },
+          "end": {
+            "offset": 30,
+            "line": 1,
+            "column": 31
+          }
+        },
+        "fields": {
+          "kind": "base",
+          "value": {
+            "type": "StringLit",
+            "span": {
+              "start": {
+                "offset": 5,
+                "line": 1,
+                "column": 6
+              },
+              "end": {
+                "offset": 30,
+                "line": 1,
+                "column": 31
+              }
+            },
+            "fields": {
+              "raw": "\"https://api.example.com\"",
+              "value": "https://api.example.com"
+            }
+          }
+        }
+      },
+      {
+        "type": "SettingStmt",
+        "span": {
+          "start": {
+            "offset": 31,
+            "line": 2,
+            "column": 1
+          },
+          "end": {
+            "offset": 41,
+            "line": 2,
+            "column": 11
+          }
+        },
+        "fields": {
+          "kind": "timeout",
+          "value": {
+            "type": "DurationLit",
+            "span": {
+              "start": {
+                "offset": 39,
+                "line": 2,
+                "column": 9
+              },
+              "end": {
+                "offset": 41,
+                "line": 2,
+                "column": 11
+              }
+            },
+            "fields": {
+              "raw": "5s"
+            }
+          }
+        }
+      },
+      {
+        "type": "ImportStmt",
+        "span": {
+          "start": {
+            "offset": 42,
+            "line": 3,
+            "column": 1
+          },
+          "end": {
+            "offset": 60,
+            "line": 3,
+            "column": 19
+          }
+        },
+        "fields": {
+          "path": {
+            "type": "StringLit",
+            "span": {
+              "start": {
+                "offset": 49,
+                "line": 3,
+                "column": 8
+              },
+              "end": {
+                "offset": 60,
+                "line": 3,
+                "column": 19
+              }
+            },
+            "fields": {
+              "raw": "\"common.pt\"",
+              "value": "common.pt"
+            }
+          }
+        }
+      },
+      {
+        "type": "LetStmt",
+        "span": {
+          "start": {
+            "offset": 61,
+            "line": 4,
+            "column": 1
+          },
+          "end": {
+            "offset": 72,
+            "line": 4,
+            "column": 12
+          }
+        },
+        "fields": {
+          "name": "foo",
+          "value": {
+            "type": "NumberLit",
+            "span": {
+              "start": {
+                "offset": 71,
+                "line": 4,
+                "column": 11
+              },
+              "end": {
+                "offset": 72,
+                "line": 4,
+                "column": 12
+              }
+            },
+            "fields": {
+              "raw": "1"
+            }
+          }
+        }
+      },
+      {
+        "type": "ReqDecl",
+        "span": {
+          "start": {
+            "offset": 74,
+            "line": 6,
+            "column": 1
+          },
+          "end": {
+            "offset": 144,
+            "line": 11,
+            "column": 1
+          }
+        },
+        "fields": {
+          "lines": [
+            {
+              "type": "HttpLine",
+              "span": {
+                "start": {
+                  "offset": 87,
+                  "line": 7,
+                  "column": 3
+                },
+                "end": {
+                  "offset": 102,
+                  "line": 7,
+                  "column": 18
+                }
+              },
+              "fields": {
+                "method": "GET",
+                "path": "/auth/login"
+              }
+            },
+            {
+              "type": "AssertStmt",
+              "span": {
+                "start": {
+                  "offset": 105,
+                  "line": 8,
+                  "column": 3
+                },
+                "end": {
+                  "offset": 120,
+                  "line": 8,
+                  "column": 18
+                }
+              },
+              "fields": {
+                "expr": {
+                  "type": "BinaryExpr",
+                  "span": {
+                    "start": {
+                      "offset": 107,
+                      "line": 8,
+                      "column": 5
+                    },
+                    "end": {
+                      "offset": 120,
+                      "line": 8,
+                      "column": 18
+                    }
+                  },
+                  "fields": {
+                    "left": {
+                      "type": "IdentExpr",
+                      "span": {
+                        "start": {
+                          "offset": 107,
+                          "line": 8,
+                          "column": 5
+                        },
+                        "end": {
+                          "offset": 113,
+                          "line": 8,
+                          "column": 11
+                        }
+                      },
+                      "fields": {
+                        "name": "status"
+                      }
+                    },
+                    "op": "==",
+                    "right": {
+                      "type": "NumberLit",
+                      "span": {
+                        "start": {
+                          "offset": 117,
+                          "line": 8,
+                          "column": 15
+                        },
+                        "end": {
+                          "offset": 120,
+                          "line": 8,
+                          "column": 18
+                        }
+                      },
+                      "fields": {
+                        "raw": "200"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "LetStmt",
+              "span": {
+                "start": {
+                  "offset": 123,
+                  "line": 9,
+                  "column": 3
+                },
+                "end": {
+                  "offset": 142,
+                  "line": 9,
+                  "column": 22
+                }
+              },
+              "fields": {
+                "name": "token",
+                "value": {
+                  "type": "FieldExpr",
+                  "span": {
+                    "start": {
+                      "offset": 135,
+                      "line": 9,
+                      "column": 15
+                    },
+                    "end": {
+                      "offset": 142,
+                      "line": 9,
+                      "column": 22
+                    }
+                  },
+                  "fields": {
+                    "expr": {
+                      "type": "DollarExpr",
+                      "span": {
+                        "start": {
+                          "offset": 135,
+                          "line": 9,
+                          "column": 15
+                        },
+                        "end": {
+                          "offset": 136,
+                          "line": 9,
+                          "column": 16
+                        }
+                      }
+                    },
+                    "name": "token"
+                  }
+                }
+              }
+            }
+          ],
+          "name": "login",
+          "parent": null
+        }
+      },
+      {
+        "type": "FlowDecl",
+        "span": {
+          "start": {
+            "offset": 144,
+            "line": 11,
+            "column": 1
+          },
+          "end": {
+            "offset": 213,
+            "line": 15,
+            "column": 1
+          }
+        },
+        "fields": {
+          "asserts": [
+            {
+              "type": "AssertStmt",
+              "span": {
+                "start": {
+                  "offset": 191,
+                  "line": 14,
+                  "column": 3
+                },
+                "end": {
+                  "offset": 212,
+                  "line": 14,
+                  "column": 24
+                }
+              },
+              "fields": {
+                "expr": {
+                  "type": "BinaryExpr",
+                  "span": {
+                    "start": {
+                      "offset": 193,
+                      "line": 14,
+                      "column": 5
+                    },
+                    "end": {
+                      "offset": 212,
+                      "line": 14,
+                      "column": 24
+                    }
+                  },
+                  "fields": {
+                    "left": {
+                      "type": "FieldExpr",
+                      "span": {
+                        "start": {
+                          "offset": 193,
+                          "line": 14,
+                          "column": 5
+                        },
+                        "end": {
+                          "offset": 205,
+                          "line": 14,
+                          "column": 17
+                        }
+                      },
+                      "fields": {
+                        "expr": {
+                          "type": "IdentExpr",
+                          "span": {
+                            "start": {
+                              "offset": 193,
+                              "line": 14,
+                              "column": 5
+                            },
+                            "end": {
+                              "offset": 198,
+                              "line": 14,
+                              "column": 10
+                            }
+                          },
+                          "fields": {
+                            "name": "login"
+                          }
+                        },
+                        "name": "status"
+                      }
+                    },
+                    "op": "==",
+                    "right": {
+                      "type": "NumberLit",
+                      "span": {
+                        "start": {
+                          "offset": 209,
+                          "line": 14,
+                          "column": 21
+                        },
+                        "end": {
+                          "offset": 212,
+                          "line": 14,
+                          "column": 24
+                        }
+                      },
+                      "fields": {
+                        "raw": "200"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "chain": [
+            {
+              "alias": null,
+              "req_name": "login",
+              "span": {
+                "start": {
+                  "offset": 174,
+                  "line": 13,
+                  "column": 3
+                },
+                "end": {
+                  "offset": 179,
+                  "line": 13,
+                  "column": 8
+                }
+              }
+            },
+            {
+              "alias": null,
+              "req_name": "login",
+              "span": {
+                "start": {
+                  "offset": 183,
+                  "line": 13,
+                  "column": 12
+                },
+                "end": {
+                  "offset": 188,
+                  "line": 13,
+                  "column": 17
+                }
+              }
+            }
+          ],
+          "name": {
+            "type": "StringLit",
+            "span": {
+              "start": {
+                "offset": 149,
+                "line": 11,
+                "column": 6
+              },
+              "end": {
+                "offset": 156,
+                "line": 11,
+                "column": 13
+              }
+            },
+            "fields": {
+              "raw": "\"basic\"",
+              "value": "basic"
+            }
+          },
+          "prelude": [
+            {
+              "type": "LetStmt",
+              "span": {
+                "start": {
+                  "offset": 160,
+                  "line": 12,
+                  "column": 3
+                },
+                "end": {
+                  "offset": 171,
+                  "line": 12,
+                  "column": 14
+                }
+              },
+              "fields": {
+                "name": "foo",
+                "value": {
+                  "type": "NumberLit",
+                  "span": {
+                    "start": {
+                      "offset": 170,
+                      "line": 12,
+                      "column": 13
+                    },
+                    "end": {
+                      "offset": 171,
+                      "line": 12,
+                      "column": 14
+                    }
+                  },
+                  "fields": {
+                    "raw": "2"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

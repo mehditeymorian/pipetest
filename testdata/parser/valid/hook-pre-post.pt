@@ -1,0 +1,9 @@
+req login:
+  POST /auth/login
+  pre hook {
+    req.header["X-Trace"] = uuid()
+  }
+  post hook {
+    let x = 1
+    x
+  }

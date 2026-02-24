@@ -1,0 +1,6 @@
+req baseReq:
+  GET /base
+
+req child(baseReq):
+  POST /child
+  header X-Trace = "x"

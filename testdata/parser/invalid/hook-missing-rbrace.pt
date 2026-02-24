@@ -1,0 +1,4 @@
+req login:
+  POST /auth/login
+  pre hook {
+    let x = 1
