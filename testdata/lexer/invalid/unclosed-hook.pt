@@ -1,0 +1,3 @@
+req bad:
+  pre hook {
+    let x = 1

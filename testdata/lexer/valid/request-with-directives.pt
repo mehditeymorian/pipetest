@@ -1,0 +1,18 @@
+req login:
+  POST /auth/login
+  json {
+    email: "a",
+    password: "b",
+  }
+  header X-Trace = "abc"
+  query page = 1
+  auth bearer token
+  pre hook {
+    req.header["X-Trace"] = uuid()
+  }
+  post hook {
+    let x = 1
+    x
+  }
+  ? status == 200
+  let token = $.token

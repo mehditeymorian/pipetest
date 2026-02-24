@@ -1,0 +1,352 @@
+[
+  {
+    "kind": "KW_FLOW",
+    "lit": "flow",
+    "start": {
+      "offset": 0,
+      "line": 1,
+      "column": 1
+    },
+    "end": {
+      "offset": 4,
+      "line": 1,
+      "column": 5
+    }
+  },
+  {
+    "kind": "STRING",
+    "lit": "\"happy path\"",
+    "start": {
+      "offset": 5,
+      "line": 1,
+      "column": 6
+    },
+    "end": {
+      "offset": 17,
+      "line": 1,
+      "column": 18
+    }
+  },
+  {
+    "kind": "COLON",
+    "lit": ":",
+    "start": {
+      "offset": 17,
+      "line": 1,
+      "column": 18
+    },
+    "end": {
+      "offset": 18,
+      "line": 1,
+      "column": 19
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 18,
+      "line": 1,
+      "column": 19
+    },
+    "end": {
+      "offset": 19,
+      "line": 2,
+      "column": 1
+    }
+  },
+  {
+    "kind": "INDENT",
+    "lit": "",
+    "start": {
+      "offset": 19,
+      "line": 2,
+      "column": 1
+    },
+    "end": {
+      "offset": 21,
+      "line": 2,
+      "column": 3
+    }
+  },
+  {
+    "kind": "KW_LET",
+    "lit": "let",
+    "start": {
+      "offset": 21,
+      "line": 2,
+      "column": 3
+    },
+    "end": {
+      "offset": 24,
+      "line": 2,
+      "column": 6
+    }
+  },
+  {
+    "kind": "IDENT",
+    "lit": "group_id",
+    "start": {
+      "offset": 25,
+      "line": 2,
+      "column": 7
+    },
+    "end": {
+      "offset": 33,
+      "line": 2,
+      "column": 15
+    }
+  },
+  {
+    "kind": "ASSIGN",
+    "lit": "=",
+    "start": {
+      "offset": 34,
+      "line": 2,
+      "column": 16
+    },
+    "end": {
+      "offset": 35,
+      "line": 2,
+      "column": 17
+    }
+  },
+  {
+    "kind": "STRING",
+    "lit": "\"g\"",
+    "start": {
+      "offset": 36,
+      "line": 2,
+      "column": 18
+    },
+    "end": {
+      "offset": 39,
+      "line": 2,
+      "column": 21
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 39,
+      "line": 2,
+      "column": 21
+    },
+    "end": {
+      "offset": 40,
+      "line": 3,
+      "column": 1
+    }
+  },
+  {
+    "kind": "IDENT",
+    "lit": "login",
+    "start": {
+      "offset": 42,
+      "line": 3,
+      "column": 3
+    },
+    "end": {
+      "offset": 47,
+      "line": 3,
+      "column": 8
+    }
+  },
+  {
+    "kind": "ARROW",
+    "lit": "-\u003e",
+    "start": {
+      "offset": 48,
+      "line": 3,
+      "column": 9
+    },
+    "end": {
+      "offset": 50,
+      "line": 3,
+      "column": 11
+    }
+  },
+  {
+    "kind": "IDENT",
+    "lit": "listOrders",
+    "start": {
+      "offset": 51,
+      "line": 3,
+      "column": 12
+    },
+    "end": {
+      "offset": 61,
+      "line": 3,
+      "column": 22
+    }
+  },
+  {
+    "kind": "COLON",
+    "lit": ":",
+    "start": {
+      "offset": 62,
+      "line": 3,
+      "column": 23
+    },
+    "end": {
+      "offset": 63,
+      "line": 3,
+      "column": 24
+    }
+  },
+  {
+    "kind": "IDENT",
+    "lit": "orders1",
+    "start": {
+      "offset": 64,
+      "line": 3,
+      "column": 25
+    },
+    "end": {
+      "offset": 71,
+      "line": 3,
+      "column": 32
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 71,
+      "line": 3,
+      "column": 32
+    },
+    "end": {
+      "offset": 72,
+      "line": 4,
+      "column": 1
+    }
+  },
+  {
+    "kind": "QUESTION",
+    "lit": "?",
+    "start": {
+      "offset": 74,
+      "line": 4,
+      "column": 3
+    },
+    "end": {
+      "offset": 75,
+      "line": 4,
+      "column": 4
+    }
+  },
+  {
+    "kind": "IDENT",
+    "lit": "orders1",
+    "start": {
+      "offset": 76,
+      "line": 4,
+      "column": 5
+    },
+    "end": {
+      "offset": 83,
+      "line": 4,
+      "column": 12
+    }
+  },
+  {
+    "kind": "DOT",
+    "lit": ".",
+    "start": {
+      "offset": 83,
+      "line": 4,
+      "column": 12
+    },
+    "end": {
+      "offset": 84,
+      "line": 4,
+      "column": 13
+    }
+  },
+  {
+    "kind": "IDENT",
+    "lit": "status",
+    "start": {
+      "offset": 84,
+      "line": 4,
+      "column": 13
+    },
+    "end": {
+      "offset": 90,
+      "line": 4,
+      "column": 19
+    }
+  },
+  {
+    "kind": "OP_EQ",
+    "lit": "==",
+    "start": {
+      "offset": 91,
+      "line": 4,
+      "column": 20
+    },
+    "end": {
+      "offset": 93,
+      "line": 4,
+      "column": 22
+    }
+  },
+  {
+    "kind": "NUMBER",
+    "lit": "200",
+    "start": {
+      "offset": 94,
+      "line": 4,
+      "column": 23
+    },
+    "end": {
+      "offset": 97,
+      "line": 4,
+      "column": 26
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 97,
+      "line": 4,
+      "column": 26
+    },
+    "end": {
+      "offset": 98,
+      "line": 5,
+      "column": 1
+    }
+  },
+  {
+    "kind": "DEDENT",
+    "lit": "",
+    "start": {
+      "offset": 98,
+      "line": 5,
+      "column": 1
+    },
+    "end": {
+      "offset": 98,
+      "line": 5,
+      "column": 1
+    }
+  },
+  {
+    "kind": "EOF",
+    "lit": "",
+    "start": {
+      "offset": 98,
+      "line": 5,
+      "column": 1
+    },
+    "end": {
+      "offset": 98,
+      "line": 5,
+      "column": 1
+    }
+  }
+]

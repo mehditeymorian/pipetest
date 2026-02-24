@@ -10,10 +10,10 @@ Status legend:
 
 Tasks (MVP):
 
-| Task | Status | Last Updated |
-| --- | --- | --- |
-| mvp-00-scaffold | not-started | 2026-02-24 |
-| mvp-01-lexer | not-started | 2026-02-24 |
+| Task | Status      | Last Updated |
+| --- |-------------| --- |
+| mvp-00-scaffold | done        | 2026-02-24 |
+| mvp-01-lexer | done | 2026-02-24 |
 | mvp-02-parser-ast | not-started | 2026-02-24 |
 | mvp-03-compiler | not-started | 2026-02-24 |
 | mvp-04-runtime | not-started | 2026-02-24 |
@@ -21,3 +21,4 @@ Tasks (MVP):
 
 History:
 - 2026-02-24: Created MVP task definitions under docs/tasks/ and initialized task state.
+- 2026-02-24: Completed mvp-01-lexer.

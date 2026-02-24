@@ -1,0 +1,4 @@
+base "https://api.example.com"
+timeout 5s
+import "common.pt"
+let foo = 1

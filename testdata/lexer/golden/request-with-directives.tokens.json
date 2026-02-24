@@ -1,0 +1,1094 @@
+[
+  {
+    "kind": "KW_REQ",
+    "lit": "req",
+    "start": {
+      "offset": 0,
+      "line": 1,
+      "column": 1
+    },
+    "end": {
+      "offset": 3,
+      "line": 1,
+      "column": 4
+    }
+  },
+  {
+    "kind": "IDENT",
+    "lit": "login",
+    "start": {
+      "offset": 4,
+      "line": 1,
+      "column": 5
+    },
+    "end": {
+      "offset": 9,
+      "line": 1,
+      "column": 10
+    }
+  },
+  {
+    "kind": "COLON",
+    "lit": ":",
+    "start": {
+      "offset": 9,
+      "line": 1,
+      "column": 10
+    },
+    "end": {
+      "offset": 10,
+      "line": 1,
+      "column": 11
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 10,
+      "line": 1,
+      "column": 11
+    },
+    "end": {
+      "offset": 11,
+      "line": 2,
+      "column": 1
+    }
+  },
+  {
+    "kind": "INDENT",
+    "lit": "",
+    "start": {
+      "offset": 11,
+      "line": 2,
+      "column": 1
+    },
+    "end": {
+      "offset": 13,
+      "line": 2,
+      "column": 3
+    }
+  },
+  {
+    "kind": "KW_POST_M",
+    "lit": "POST",
+    "start": {
+      "offset": 13,
+      "line": 2,
+      "column": 3
+    },
+    "end": {
+      "offset": 17,
+      "line": 2,
+      "column": 7
+    }
+  },
+  {
+    "kind": "PATH",
+    "lit": "/auth/login",
+    "start": {
+      "offset": 18,
+      "line": 2,
+      "column": 8
+    },
+    "end": {
+      "offset": 29,
+      "line": 2,
+      "column": 19
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 29,
+      "line": 2,
+      "column": 19
+    },
+    "end": {
+      "offset": 30,
+      "line": 3,
+      "column": 1
+    }
+  },
+  {
+    "kind": "KW_JSON",
+    "lit": "json",
+    "start": {
+      "offset": 32,
+      "line": 3,
+      "column": 3
+    },
+    "end": {
+      "offset": 36,
+      "line": 3,
+      "column": 7
+    }
+  },
+  {
+    "kind": "LBRACE",
+    "lit": "{",
+    "start": {
+      "offset": 37,
+      "line": 3,
+      "column": 8
+    },
+    "end": {
+      "offset": 38,
+      "line": 3,
+      "column": 9
+    }
+  },
+  {
+    "kind": "IDENT",
+    "lit": "email",
+    "start": {
+      "offset": 43,
+      "line": 4,
+      "column": 5
+    },
+    "end": {
+      "offset": 48,
+      "line": 4,
+      "column": 10
+    }
+  },
+  {
+    "kind": "COLON",
+    "lit": ":",
+    "start": {
+      "offset": 48,
+      "line": 4,
+      "column": 10
+    },
+    "end": {
+      "offset": 49,
+      "line": 4,
+      "column": 11
+    }
+  },
+  {
+    "kind": "STRING",
+    "lit": "\"a\"",
+    "start": {
+      "offset": 50,
+      "line": 4,
+      "column": 12
+    },
+    "end": {
+      "offset": 53,
+      "line": 4,
+      "column": 15
+    }
+  },
+  {
+    "kind": "COMMA",
+    "lit": ",",
+    "start": {
+      "offset": 53,
+      "line": 4,
+      "column": 15
+    },
+    "end": {
+      "offset": 54,
+      "line": 4,
+      "column": 16
+    }
+  },
+  {
+    "kind": "IDENT",
+    "lit": "password",
+    "start": {
+      "offset": 59,
+      "line": 5,
+      "column": 5
+    },
+    "end": {
+      "offset": 67,
+      "line": 5,
+      "column": 13
+    }
+  },
+  {
+    "kind": "COLON",
+    "lit": ":",
+    "start": {
+      "offset": 67,
+      "line": 5,
+      "column": 13
+    },
+    "end": {
+      "offset": 68,
+      "line": 5,
+      "column": 14
+    }
+  },
+  {
+    "kind": "STRING",
+    "lit": "\"b\"",
+    "start": {
+      "offset": 69,
+      "line": 5,
+      "column": 15
+    },
+    "end": {
+      "offset": 72,
+      "line": 5,
+      "column": 18
+    }
+  },
+  {
+    "kind": "COMMA",
+    "lit": ",",
+    "start": {
+      "offset": 72,
+      "line": 5,
+      "column": 18
+    },
+    "end": {
+      "offset": 73,
+      "line": 5,
+      "column": 19
+    }
+  },
+  {
+    "kind": "RBRACE",
+    "lit": "}",
+    "start": {
+      "offset": 76,
+      "line": 6,
+      "column": 3
+    },
+    "end": {
+      "offset": 77,
+      "line": 6,
+      "column": 4
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 77,
+      "line": 6,
+      "column": 4
+    },
+    "end": {
+      "offset": 78,
+      "line": 7,
+      "column": 1
+    }
+  },
+  {
+    "kind": "KW_HEADER",
+    "lit": "header",
+    "start": {
+      "offset": 80,
+      "line": 7,
+      "column": 3
+    },
+    "end": {
+      "offset": 86,
+      "line": 7,
+      "column": 9
+    }
+  },
+  {
+    "kind": "BARE_KEY",
+    "lit": "X-Trace",
+    "start": {
+      "offset": 87,
+      "line": 7,
+      "column": 10
+    },
+    "end": {
+      "offset": 94,
+      "line": 7,
+      "column": 17
+    }
+  },
+  {
+    "kind": "ASSIGN",
+    "lit": "=",
+    "start": {
+      "offset": 95,
+      "line": 7,
+      "column": 18
+    },
+    "end": {
+      "offset": 96,
+      "line": 7,
+      "column": 19
+    }
+  },
+  {
+    "kind": "STRING",
+    "lit": "\"abc\"",
+    "start": {
+      "offset": 97,
+      "line": 7,
+      "column": 20
+    },
+    "end": {
+      "offset": 102,
+      "line": 7,
+      "column": 25
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 102,
+      "line": 7,
+      "column": 25
+    },
+    "end": {
+      "offset": 103,
+      "line": 8,
+      "column": 1
+    }
+  },
+  {
+    "kind": "KW_QUERY",
+    "lit": "query",
+    "start": {
+      "offset": 105,
+      "line": 8,
+      "column": 3
+    },
+    "end": {
+      "offset": 110,
+      "line": 8,
+      "column": 8
+    }
+  },
+  {
+    "kind": "BARE_KEY",
+    "lit": "page",
+    "start": {
+      "offset": 111,
+      "line": 8,
+      "column": 9
+    },
+    "end": {
+      "offset": 115,
+      "line": 8,
+      "column": 13
+    }
+  },
+  {
+    "kind": "ASSIGN",
+    "lit": "=",
+    "start": {
+      "offset": 116,
+      "line": 8,
+      "column": 14
+    },
+    "end": {
+      "offset": 117,
+      "line": 8,
+      "column": 15
+    }
+  },
+  {
+    "kind": "NUMBER",
+    "lit": "1",
+    "start": {
+      "offset": 118,
+      "line": 8,
+      "column": 16
+    },
+    "end": {
+      "offset": 119,
+      "line": 8,
+      "column": 17
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 119,
+      "line": 8,
+      "column": 17
+    },
+    "end": {
+      "offset": 120,
+      "line": 9,
+      "column": 1
+    }
+  },
+  {
+    "kind": "KW_AUTH",
+    "lit": "auth",
+    "start": {
+      "offset": 122,
+      "line": 9,
+      "column": 3
+    },
+    "end": {
+      "offset": 126,
+      "line": 9,
+      "column": 7
+    }
+  },
+  {
+    "kind": "KW_BEARER",
+    "lit": "bearer",
+    "start": {
+      "offset": 127,
+      "line": 9,
+      "column": 8
+    },
+    "end": {
+      "offset": 133,
+      "line": 9,
+      "column": 14
+    }
+  },
+  {
+    "kind": "IDENT",
+    "lit": "token",
+    "start": {
+      "offset": 134,
+      "line": 9,
+      "column": 15
+    },
+    "end": {
+      "offset": 139,
+      "line": 9,
+      "column": 20
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 139,
+      "line": 9,
+      "column": 20
+    },
+    "end": {
+      "offset": 140,
+      "line": 10,
+      "column": 1
+    }
+  },
+  {
+    "kind": "KW_PRE",
+    "lit": "pre",
+    "start": {
+      "offset": 142,
+      "line": 10,
+      "column": 3
+    },
+    "end": {
+      "offset": 145,
+      "line": 10,
+      "column": 6
+    }
+  },
+  {
+    "kind": "KW_HOOK",
+    "lit": "hook",
+    "start": {
+      "offset": 146,
+      "line": 10,
+      "column": 7
+    },
+    "end": {
+      "offset": 150,
+      "line": 10,
+      "column": 11
+    }
+  },
+  {
+    "kind": "LBRACE",
+    "lit": "{",
+    "start": {
+      "offset": 151,
+      "line": 10,
+      "column": 12
+    },
+    "end": {
+      "offset": 152,
+      "line": 10,
+      "column": 13
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 152,
+      "line": 10,
+      "column": 13
+    },
+    "end": {
+      "offset": 153,
+      "line": 11,
+      "column": 1
+    }
+  },
+  {
+    "kind": "KW_REQ",
+    "lit": "req",
+    "start": {
+      "offset": 157,
+      "line": 11,
+      "column": 5
+    },
+    "end": {
+      "offset": 160,
+      "line": 11,
+      "column": 8
+    }
+  },
+  {
+    "kind": "DOT",
+    "lit": ".",
+    "start": {
+      "offset": 160,
+      "line": 11,
+      "column": 8
+    },
+    "end": {
+      "offset": 161,
+      "line": 11,
+      "column": 9
+    }
+  },
+  {
+    "kind": "KW_HEADER",
+    "lit": "header",
+    "start": {
+      "offset": 161,
+      "line": 11,
+      "column": 9
+    },
+    "end": {
+      "offset": 167,
+      "line": 11,
+      "column": 15
+    }
+  },
+  {
+    "kind": "LBRACK",
+    "lit": "[",
+    "start": {
+      "offset": 167,
+      "line": 11,
+      "column": 15
+    },
+    "end": {
+      "offset": 168,
+      "line": 11,
+      "column": 16
+    }
+  },
+  {
+    "kind": "STRING",
+    "lit": "\"X-Trace\"",
+    "start": {
+      "offset": 168,
+      "line": 11,
+      "column": 16
+    },
+    "end": {
+      "offset": 177,
+      "line": 11,
+      "column": 25
+    }
+  },
+  {
+    "kind": "RBRACK",
+    "lit": "]",
+    "start": {
+      "offset": 177,
+      "line": 11,
+      "column": 25
+    },
+    "end": {
+      "offset": 178,
+      "line": 11,
+      "column": 26
+    }
+  },
+  {
+    "kind": "ASSIGN",
+    "lit": "=",
+    "start": {
+      "offset": 179,
+      "line": 11,
+      "column": 27
+    },
+    "end": {
+      "offset": 180,
+      "line": 11,
+      "column": 28
+    }
+  },
+  {
+    "kind": "IDENT",
+    "lit": "uuid",
+    "start": {
+      "offset": 181,
+      "line": 11,
+      "column": 29
+    },
+    "end": {
+      "offset": 185,
+      "line": 11,
+      "column": 33
+    }
+  },
+  {
+    "kind": "LPAREN",
+    "lit": "(",
+    "start": {
+      "offset": 185,
+      "line": 11,
+      "column": 33
+    },
+    "end": {
+      "offset": 186,
+      "line": 11,
+      "column": 34
+    }
+  },
+  {
+    "kind": "RPAREN",
+    "lit": ")",
+    "start": {
+      "offset": 186,
+      "line": 11,
+      "column": 34
+    },
+    "end": {
+      "offset": 187,
+      "line": 11,
+      "column": 35
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 187,
+      "line": 11,
+      "column": 35
+    },
+    "end": {
+      "offset": 188,
+      "line": 12,
+      "column": 1
+    }
+  },
+  {
+    "kind": "RBRACE",
+    "lit": "}",
+    "start": {
+      "offset": 190,
+      "line": 12,
+      "column": 3
+    },
+    "end": {
+      "offset": 191,
+      "line": 12,
+      "column": 4
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 191,
+      "line": 12,
+      "column": 4
+    },
+    "end": {
+      "offset": 192,
+      "line": 13,
+      "column": 1
+    }
+  },
+  {
+    "kind": "KW_POST",
+    "lit": "post",
+    "start": {
+      "offset": 194,
+      "line": 13,
+      "column": 3
+    },
+    "end": {
+      "offset": 198,
+      "line": 13,
+      "column": 7
+    }
+  },
+  {
+    "kind": "KW_HOOK",
+    "lit": "hook",
+    "start": {
+      "offset": 199,
+      "line": 13,
+      "column": 8
+    },
+    "end": {
+      "offset": 203,
+      "line": 13,
+      "column": 12
+    }
+  },
+  {
+    "kind": "LBRACE",
+    "lit": "{",
+    "start": {
+      "offset": 204,
+      "line": 13,
+      "column": 13
+    },
+    "end": {
+      "offset": 205,
+      "line": 13,
+      "column": 14
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 205,
+      "line": 13,
+      "column": 14
+    },
+    "end": {
+      "offset": 206,
+      "line": 14,
+      "column": 1
+    }
+  },
+  {
+    "kind": "KW_LET",
+    "lit": "let",
+    "start": {
+      "offset": 210,
+      "line": 14,
+      "column": 5
+    },
+    "end": {
+      "offset": 213,
+      "line": 14,
+      "column": 8
+    }
+  },
+  {
+    "kind": "IDENT",
+    "lit": "x",
+    "start": {
+      "offset": 214,
+      "line": 14,
+      "column": 9
+    },
+    "end": {
+      "offset": 215,
+      "line": 14,
+      "column": 10
+    }
+  },
+  {
+    "kind": "ASSIGN",
+    "lit": "=",
+    "start": {
+      "offset": 216,
+      "line": 14,
+      "column": 11
+    },
+    "end": {
+      "offset": 217,
+      "line": 14,
+      "column": 12
+    }
+  },
+  {
+    "kind": "NUMBER",
+    "lit": "1",
+    "start": {
+      "offset": 218,
+      "line": 14,
+      "column": 13
+    },
+    "end": {
+      "offset": 219,
+      "line": 14,
+      "column": 14
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 219,
+      "line": 14,
+      "column": 14
+    },
+    "end": {
+      "offset": 220,
+      "line": 15,
+      "column": 1
+    }
+  },
+  {
+    "kind": "IDENT",
+    "lit": "x",
+    "start": {
+      "offset": 224,
+      "line": 15,
+      "column": 5
+    },
+    "end": {
+      "offset": 225,
+      "line": 15,
+      "column": 6
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 225,
+      "line": 15,
+      "column": 6
+    },
+    "end": {
+      "offset": 226,
+      "line": 16,
+      "column": 1
+    }
+  },
+  {
+    "kind": "RBRACE",
+    "lit": "}",
+    "start": {
+      "offset": 228,
+      "line": 16,
+      "column": 3
+    },
+    "end": {
+      "offset": 229,
+      "line": 16,
+      "column": 4
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 229,
+      "line": 16,
+      "column": 4
+    },
+    "end": {
+      "offset": 230,
+      "line": 17,
+      "column": 1
+    }
+  },
+  {
+    "kind": "QUESTION",
+    "lit": "?",
+    "start": {
+      "offset": 232,
+      "line": 17,
+      "column": 3
+    },
+    "end": {
+      "offset": 233,
+      "line": 17,
+      "column": 4
+    }
+  },
+  {
+    "kind": "IDENT",
+    "lit": "status",
+    "start": {
+      "offset": 234,
+      "line": 17,
+      "column": 5
+    },
+    "end": {
+      "offset": 240,
+      "line": 17,
+      "column": 11
+    }
+  },
+  {
+    "kind": "OP_EQ",
+    "lit": "==",
+    "start": {
+      "offset": 241,
+      "line": 17,
+      "column": 12
+    },
+    "end": {
+      "offset": 243,
+      "line": 17,
+      "column": 14
+    }
+  },
+  {
+    "kind": "NUMBER",
+    "lit": "200",
+    "start": {
+      "offset": 244,
+      "line": 17,
+      "column": 15
+    },
+    "end": {
+      "offset": 247,
+      "line": 17,
+      "column": 18
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 247,
+      "line": 17,
+      "column": 18
+    },
+    "end": {
+      "offset": 248,
+      "line": 18,
+      "column": 1
+    }
+  },
+  {
+    "kind": "KW_LET",
+    "lit": "let",
+    "start": {
+      "offset": 250,
+      "line": 18,
+      "column": 3
+    },
+    "end": {
+      "offset": 253,
+      "line": 18,
+      "column": 6
+    }
+  },
+  {
+    "kind": "IDENT",
+    "lit": "token",
+    "start": {
+      "offset": 254,
+      "line": 18,
+      "column": 7
+    },
+    "end": {
+      "offset": 259,
+      "line": 18,
+      "column": 12
+    }
+  },
+  {
+    "kind": "ASSIGN",
+    "lit": "=",
+    "start": {
+      "offset": 260,
+      "line": 18,
+      "column": 13
+    },
+    "end": {
+      "offset": 261,
+      "line": 18,
+      "column": 14
+    }
+  },
+  {
+    "kind": "DOLLAR",
+    "lit": "$",
+    "start": {
+      "offset": 262,
+      "line": 18,
+      "column": 15
+    },
+    "end": {
+      "offset": 263,
+      "line": 18,
+      "column": 16
+    }
+  },
+  {
+    "kind": "DOT",
+    "lit": ".",
+    "start": {
+      "offset": 263,
+      "line": 18,
+      "column": 16
+    },
+    "end": {
+      "offset": 264,
+      "line": 18,
+      "column": 17
+    }
+  },
+  {
+    "kind": "IDENT",
+    "lit": "token",
+    "start": {
+      "offset": 264,
+      "line": 18,
+      "column": 17
+    },
+    "end": {
+      "offset": 269,
+      "line": 18,
+      "column": 22
+    }
+  },
+  {
+    "kind": "NL",
+    "lit": "",
+    "start": {
+      "offset": 269,
+      "line": 18,
+      "column": 22
+    },
+    "end": {
+      "offset": 270,
+      "line": 19,
+      "column": 1
+    }
+  },
+  {
+    "kind": "DEDENT",
+    "lit": "",
+    "start": {
+      "offset": 270,
+      "line": 19,
+      "column": 1
+    },
+    "end": {
+      "offset": 270,
+      "line": 19,
+      "column": 1
+    }
+  },
+  {
+    "kind": "EOF",
+    "lit": "",
+    "start": {
+      "offset": 270,
+      "line": 19,
+      "column": 1
+    },
+    "end": {
+      "offset": 270,
+      "line": 19,
+      "column": 1
+    }
+  }
+]

@@ -1,0 +1,3 @@
+req bad:
+    POST /bad
+  json { a: 1 }
