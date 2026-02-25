@@ -36,6 +36,9 @@ const (
 	KW_PRE
 	KW_POST
 	KW_HOOK
+	KW_PRINT
+	KW_PRINTLN
+	KW_PRINTF
 	KW_TRUE
 	KW_FALSE
 	KW_NULL
@@ -111,6 +114,9 @@ var kindNames = [...]string{
 	KW_PRE:      "KW_PRE",
 	KW_POST:     "KW_POST",
 	KW_HOOK:     "KW_HOOK",
+	KW_PRINT:    "KW_PRINT",
+	KW_PRINTLN:  "KW_PRINTLN",
+	KW_PRINTF:   "KW_PRINTF",
 	KW_TRUE:     "KW_TRUE",
 	KW_FALSE:    "KW_FALSE",
 	KW_NULL:     "KW_NULL",

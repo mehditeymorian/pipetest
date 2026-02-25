@@ -1,0 +1,213 @@
+{
+  "type": "Program",
+  "span": {
+    "start": {
+      "offset": 0,
+      "line": 1,
+      "column": 1
+    },
+    "end": {
+      "offset": 107,
+      "line": 8,
+      "column": 1
+    }
+  },
+  "fields": {
+    "stmts": [
+      {
+        "type": "ReqDecl",
+        "span": {
+          "start": {
+            "offset": 0,
+            "line": 1,
+            "column": 1
+          },
+          "end": {
+            "offset": 107,
+            "line": 8,
+            "column": 1
+          }
+        },
+        "fields": {
+          "lines": [
+            {
+              "type": "HttpLine",
+              "span": {
+                "start": {
+                  "offset": 14,
+                  "line": 2,
+                  "column": 3
+                },
+                "end": {
+                  "offset": 25,
+                  "line": 2,
+                  "column": 14
+                }
+              },
+              "fields": {
+                "method": "GET",
+                "path": "/sample"
+              }
+            },
+            {
+              "type": "HookBlock",
+              "span": {
+                "start": {
+                  "offset": 28,
+                  "line": 3,
+                  "column": 3
+                },
+                "end": {
+                  "offset": 106,
+                  "line": 7,
+                  "column": 4
+                }
+              },
+              "fields": {
+                "kind": "post",
+                "stmts": [
+                  {
+                    "type": "PrintStmt",
+                    "span": {
+                      "start": {
+                        "offset": 44,
+                        "line": 4,
+                        "column": 5
+                      },
+                      "end": {
+                        "offset": 61,
+                        "line": 4,
+                        "column": 22
+                      }
+                    },
+                    "fields": {
+                      "args": [
+                        {
+                          "type": "StringLit",
+                          "span": {
+                            "start": {
+                              "offset": 50,
+                              "line": 4,
+                              "column": 11
+                            },
+                            "end": {
+                              "offset": 57,
+                              "line": 4,
+                              "column": 18
+                            }
+                          },
+                          "fields": {
+                            "raw": "\"hello\"",
+                            "value": "hello"
+                          }
+                        },
+                        {
+                          "type": "NumberLit",
+                          "span": {
+                            "start": {
+                              "offset": 59,
+                              "line": 4,
+                              "column": 20
+                            },
+                            "end": {
+                              "offset": 61,
+                              "line": 4,
+                              "column": 22
+                            }
+                          },
+                          "fields": {
+                            "raw": "42"
+                          }
+                        }
+                      ],
+                      "kind": "print"
+                    }
+                  },
+                  {
+                    "type": "PrintStmt",
+                    "span": {
+                      "start": {
+                        "offset": 66,
+                        "line": 5,
+                        "column": 5
+                      },
+                      "end": {
+                        "offset": 73,
+                        "line": 5,
+                        "column": 12
+                      }
+                    },
+                    "fields": {
+                      "args": [],
+                      "kind": "println"
+                    }
+                  },
+                  {
+                    "type": "PrintStmt",
+                    "span": {
+                      "start": {
+                        "offset": 78,
+                        "line": 6,
+                        "column": 5
+                      },
+                      "end": {
+                        "offset": 102,
+                        "line": 6,
+                        "column": 29
+                      }
+                    },
+                    "fields": {
+                      "args": [
+                        {
+                          "type": "StringLit",
+                          "span": {
+                            "start": {
+                              "offset": 85,
+                              "line": 6,
+                              "column": 12
+                            },
+                            "end": {
+                              "offset": 95,
+                              "line": 6,
+                              "column": 22
+                            }
+                          },
+                          "fields": {
+                            "raw": "\"token=%s\"",
+                            "value": "token=%s"
+                          }
+                        },
+                        {
+                          "type": "StringLit",
+                          "span": {
+                            "start": {
+                              "offset": 97,
+                              "line": 6,
+                              "column": 24
+                            },
+                            "end": {
+                              "offset": 102,
+                              "line": 6,
+                              "column": 29
+                            }
+                          },
+                          "fields": {
+                            "raw": "\"abc\"",
+                            "value": "abc"
+                          }
+                        }
+                      ],
+                      "kind": "printf"
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "name": "sample",
+          "parent": null
+        }
+      }
+    ]
+  }
+}

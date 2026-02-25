@@ -1,9 +1,12 @@
 package runtime
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -114,6 +117,104 @@ flow "broken":
 	if result.Diags[0].Code != "E_RUNTIME_TRANSPORT" {
 		t.Fatalf("expected E_RUNTIME_TRANSPORT, got %s", result.Diags[0].Code)
 	}
+}
+
+func TestExecuteHookPrintStatements(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"token":"abc"}`))
+	}))
+	defer srv.Close()
+
+	src := `
+base "` + srv.URL + `"
+
+req only:
+  GET /print
+  post hook {
+    print "token="
+    println $.token
+    printf "status=%d", status
+  }
+  ? status == 200
+
+flow "print-flow":
+  only
+  ? only.status == 200
+`
+	plan := mustCompilePlan(t, "runtime-print.pt", src)
+	out := captureStdout(t, func() {
+		result := Execute(context.Background(), plan, Options{})
+		if len(result.Diags) != 0 {
+			t.Fatalf("expected no diagnostics, got %+v", result.Diags)
+		}
+	})
+	if !strings.Contains(out, "status=200") {
+		t.Fatalf("expected formatted status output, got %q", out)
+	}
+	if strings.Contains(out, "%!") {
+		t.Fatalf("unexpected fmt mismatch output: %q", out)
+	}
+}
+
+func TestExecuteHookPrintfIntegerLiteralWithPercentD(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	src := `
+base "` + srv.URL + `"
+
+req only:
+  GET /get
+  post hook {
+    printf "status: %d\n", 2
+  }
+  ? status == 200
+
+flow "print-int":
+  only
+  ? only.status == 200
+`
+	plan := mustCompilePlan(t, "runtime-print-int.pt", src)
+	out := captureStdout(t, func() {
+		result := Execute(context.Background(), plan, Options{})
+		if len(result.Diags) != 0 {
+			t.Fatalf("expected no diagnostics, got %+v", result.Diags)
+		}
+	})
+	if !strings.Contains(out, "status: 2\n") {
+		t.Fatalf("expected integer formatted output, got %q", out)
+	}
+	if strings.Contains(out, "%!d(") {
+		t.Fatalf("unexpected fmt mismatch output: %q", out)
+	}
+}
+
+func captureStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("pipe: %v", err)
+	}
+	os.Stdout = w
+	defer func() {
+		os.Stdout = old
+		_ = r.Close()
+	}()
+
+	fn()
+
+	_ = w.Close()
+
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, r); err != nil {
+		t.Fatalf("copy stdout: %v", err)
+	}
+	return buf.String()
 }
 
 func mustCompilePlan(t *testing.T, path, src string) *compiler.Plan {

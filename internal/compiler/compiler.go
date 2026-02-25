@@ -368,6 +368,12 @@ func refsExprInHook(block *ast.HookBlock, fn func(ast.Expr) bool) bool {
 			if fn(s.Expr) {
 				return true
 			}
+		case *ast.PrintStmt:
+			for _, arg := range s.Args {
+				if fn(arg) {
+					return true
+				}
+			}
 		}
 	}
 	return false
@@ -471,6 +477,12 @@ func (c *compiler) requiredVars(req *ast.ReqDecl) []string {
 				case *ast.ExprStmt:
 					for _, id := range collectExprIdents(hs.Expr) {
 						add(id)
+					}
+				case *ast.PrintStmt:
+					for _, arg := range hs.Args {
+						for _, id := range collectExprIdents(arg) {
+							add(id)
+						}
 					}
 				}
 			}

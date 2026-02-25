@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -393,9 +394,105 @@ func execHook(block *ast.HookBlock, rctx requestContext) error {
 			if _, err := evalExpr(s.Expr, rctx); err != nil {
 				return err
 			}
+		case *ast.PrintStmt:
+			if err := execPrintStmt(s, rctx); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
+}
+
+func execPrintStmt(stmt *ast.PrintStmt, rctx requestContext) error {
+	args := make([]any, 0, len(stmt.Args))
+	for _, arg := range stmt.Args {
+		v, err := evalExpr(arg, rctx)
+		if err != nil {
+			return err
+		}
+		args = append(args, v)
+	}
+	switch stmt.Kind {
+	case ast.Print:
+		fmt.Print(args...)
+	case ast.Println:
+		fmt.Println(args...)
+	case ast.Printf:
+		if len(args) == 0 {
+			return fmt.Errorf("printf expects at least one argument")
+		}
+		format := fmt.Sprint(args[0])
+		fmt.Printf(format, normalizePrintfArgs(format, args[1:])...)
+	}
+	return nil
+}
+
+func normalizePrintfArgs(format string, args []any) []any {
+	if len(args) == 0 {
+		return args
+	}
+	out := make([]any, len(args))
+	copy(out, args)
+
+	argIndex := 0
+	for i := 0; i < len(format) && argIndex < len(out); i++ {
+		if format[i] != '%' {
+			continue
+		}
+		i++
+		if i >= len(format) {
+			break
+		}
+		if format[i] == '%' {
+			continue
+		}
+		for i < len(format) && strings.ContainsRune("#0- +", rune(format[i])) {
+			i++
+		}
+		if i < len(format) && format[i] == '*' {
+			out[argIndex] = coercePrintfIntArg(out[argIndex])
+			argIndex++
+			i++
+		} else {
+			for i < len(format) && format[i] >= '0' && format[i] <= '9' {
+				i++
+			}
+		}
+		if i < len(format) && format[i] == '.' {
+			i++
+			if i < len(format) && format[i] == '*' {
+				if argIndex < len(out) {
+					out[argIndex] = coercePrintfIntArg(out[argIndex])
+					argIndex++
+				}
+				i++
+			} else {
+				for i < len(format) && format[i] >= '0' && format[i] <= '9' {
+					i++
+				}
+			}
+		}
+		if i >= len(format) || argIndex >= len(out) {
+			break
+		}
+		switch format[i] {
+		case 'b', 'c', 'd', 'o', 'O', 'U', 'x', 'X':
+			out[argIndex] = coercePrintfIntArg(out[argIndex])
+		}
+		argIndex++
+	}
+	return out
+}
+
+func coercePrintfIntArg(v any) any {
+	f, ok := v.(float64)
+	if !ok || math.IsNaN(f) || math.IsInf(f, 0) || math.Trunc(f) != f {
+		return v
+	}
+	if f < math.MinInt64 || f > math.MaxInt64 {
+		return v
+	}
+	return int64(f)
 }
 
 func assignLValue(target *ast.LValue, value any, rctx requestContext) error {

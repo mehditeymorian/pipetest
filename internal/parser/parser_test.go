@@ -172,6 +172,15 @@ func snapshotNode(node interface{}) interface{} {
 				"expr": snapshotNode(n.Expr),
 			},
 		}
+	case *ast.PrintStmt:
+		return nodeSnapshot{
+			Type: "PrintStmt",
+			Span: snapshotSpan(n.Span),
+			Fields: map[string]interface{}{
+				"kind": printKindString(n.Kind),
+				"args": snapshotExprList(n.Args),
+			},
+		}
 	case *ast.IdentExpr:
 		return nodeSnapshot{
 			Type: "IdentExpr",
@@ -471,6 +480,18 @@ func hookKindString(kind ast.HookKind) string {
 	}
 }
 
+func printKindString(kind ast.PrintKind) string {
+	switch kind {
+	case ast.Print:
+		return "print"
+	case ast.Println:
+		return "println"
+	case ast.Printf:
+		return "printf"
+	default:
+		return "unknown"
+	}
+}
 func unaryOpString(op ast.UnaryOp) string {
 	switch op {
 	case ast.UnaryNot:
@@ -633,6 +654,11 @@ func TestParserGolden(t *testing.T) {
 			name:       "flow-with-aliases",
 			inputPath:  filepath.Join("..", "..", "testdata", "parser", "valid", "flow-with-aliases.pt"),
 			goldenPath: filepath.Join("..", "..", "testdata", "parser", "golden", "flow-with-aliases.ast.json"),
+		},
+		{
+			name:       "hook-print-statements",
+			inputPath:  filepath.Join("..", "..", "testdata", "parser", "valid", "hook-print-statements.pt"),
+			goldenPath: filepath.Join("..", "..", "testdata", "parser", "golden", "hook-print-statements.ast.json"),
 		},
 	}
 

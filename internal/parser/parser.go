@@ -334,6 +334,9 @@ func (p *Parser) parseHookStmt() ast.HookStmt {
 	if p.cur.Kind == lexer.KW_LET {
 		return p.parseLet()
 	}
+	if p.cur.Kind == lexer.KW_PRINT || p.cur.Kind == lexer.KW_PRINTLN || p.cur.Kind == lexer.KW_PRINTF {
+		return p.parsePrintStmt()
+	}
 	left := p.parseExpr(precLowest)
 	if p.cur.Kind == lexer.ASSIGN {
 		p.advance()
@@ -346,6 +349,46 @@ func (p *Parser) parseHookStmt() ast.HookStmt {
 		return &ast.AssignStmt{Target: lv, Value: val, Span: joinSpan(lv.Span, exprSpan(val))}
 	}
 	return &ast.ExprStmt{Expr: left, Span: exprSpan(left)}
+}
+
+func (p *Parser) parsePrintStmt() ast.HookStmt {
+	startTok := p.cur
+	var kind ast.PrintKind
+	allowEmpty := false
+	switch p.cur.Kind {
+	case lexer.KW_PRINT:
+		kind = ast.Print
+	case lexer.KW_PRINTLN:
+		kind = ast.Println
+		allowEmpty = true
+	case lexer.KW_PRINTF:
+		kind = ast.Printf
+	default:
+		p.addError(ErrExpectedToken, "expected print statement", "use print/println/printf", p.cur.Span)
+		return &ast.PrintStmt{Kind: ast.Print, Span: toASTSpan(p.cur.Span)}
+	}
+	p.advance()
+	args := p.parsePrintArgs()
+	if !allowEmpty && len(args) == 0 {
+		p.addError(ErrExpectedToken, "expected print argument", "provide at least one expression", startTok.Span)
+	}
+	end := toASTSpan(startTok.Span)
+	if len(args) > 0 {
+		end = exprSpan(args[len(args)-1])
+	}
+	return &ast.PrintStmt{Kind: kind, Args: args, Span: joinSpan(toASTSpan(startTok.Span), end)}
+}
+
+func (p *Parser) parsePrintArgs() []ast.Expr {
+	if p.cur.Kind == lexer.NL || p.cur.Kind == lexer.SEMICOLON || p.cur.Kind == lexer.RBRACE || p.cur.Kind == lexer.EOF {
+		return nil
+	}
+	args := []ast.Expr{p.parseExpr(precLowest)}
+	for p.cur.Kind == lexer.COMMA {
+		p.advance()
+		args = append(args, p.parseExpr(precLowest))
+	}
+	return args
 }
 
 func (p *Parser) parseAssertLine() *ast.AssertStmt {

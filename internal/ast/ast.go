@@ -34,6 +34,15 @@ type HookStmt interface {
 	hookStmtNode()
 }
 
+// PrintKind identifies print statement forms.
+type PrintKind int
+
+const (
+	Print PrintKind = iota
+	Println
+	Printf
+)
+
 // Expr marks expression nodes.
 type Expr interface {
 	exprNode()
@@ -218,6 +227,15 @@ type ExprStmt struct {
 }
 
 func (*ExprStmt) hookStmtNode() {}
+
+// PrintStmt represents print/println/printf hook statements.
+type PrintStmt struct {
+	Kind PrintKind
+	Args []Expr
+	Span Span
+}
+
+func (*PrintStmt) hookStmtNode() {}
 
 // KeyKind distinguishes key token forms.
 type KeyKind int

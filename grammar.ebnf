@@ -94,7 +94,14 @@ StmtSep         ::= ";" | NL ;
 
 HookStmt        ::= LetStmt
                   | AssignStmt
+                  | PrintStmt
                   | ExprStmt ;
+
+PrintStmt       ::= "print" ExprList
+                  | "println" [ ExprList ]
+                  | "printf" ExprList ;
+
+ExprList        ::= Expr { WS? "," WS? Expr } ;
 
 AssignStmt      ::= LValue "=" Expr ;
 
