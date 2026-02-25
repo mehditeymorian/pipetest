@@ -40,6 +40,14 @@ go build ./cmd/pipetest
 ./pipetest --help
 ```
 
+### Option 3: Pull container image from GitHub Container Registry
+
+Use the published GHCR image:
+
+```bash
+docker run --rm ghcr.io/mehditeymorian/pipetest:latest --help
+```
+
 ## Quick start
 
 Create `program.pt`:
@@ -158,6 +166,18 @@ For complete GitHub Actions and GitLab CI examples, see:
 
 - [`docs/language-guide.md#ci-integration`](docs/language-guide.md#ci-integration)
 - [`docs/reporting.md`](docs/reporting.md)
+
+This repository includes two GitHub Actions workflows:
+
+- `.github/workflows/ci.yml`
+  - runs `go test ./...`
+  - runs `go build ./...`
+  - runs `golangci-lint run ./...`
+  - triggers on pull requests and all branch pushes
+- `.github/workflows/container-image.yml`
+  - builds a Docker image from `Dockerfile`
+  - smoke-tests the image on pull requests
+  - publishes tagged images to `ghcr.io/<owner>/pipetest` on `main` and version tags
 
 ## Development
 
