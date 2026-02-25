@@ -236,6 +236,7 @@ func newRequestCmd(stdout io.Writer) *cobra.Command {
 			single.Flows = []compiler.PlanFlow{{
 				Name:  "request:" + requestName,
 				Steps: []compiler.PlanStep{{Request: requestName, Binding: requestName}},
+				Decl:  &ast.FlowDecl{},
 			}}
 
 			result := runtime.Execute(context.Background(), &single, runtimeOpt)

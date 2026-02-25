@@ -94,7 +94,13 @@ func Execute(ctx context.Context, plan *compiler.Plan, opt Options) Result {
 		verbosef(opt, "flow %q: start", flow.Name)
 		fr := FlowResult{Name: flow.Name}
 		flowVars := copyMap(globals)
-		for _, pre := range flow.Decl.Prelude {
+		prelude := []*ast.LetStmt{}
+		asserts := []*ast.AssertStmt{}
+		if flow.Decl != nil {
+			prelude = flow.Decl.Prelude
+			asserts = flow.Decl.Asserts
+		}
+		for _, pre := range prelude {
 			val, err := evalExpr(pre.Value, requestContext{flowVars: flowVars})
 			if err != nil {
 				res.Diags = append(res.Diags, runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate flow prelude let", plan.EntryPath, pre.Span, err.Error(), flow.Name, ""))
@@ -119,7 +125,7 @@ func Execute(ctx context.Context, plan *compiler.Plan, opt Options) Result {
 			fr.Steps = append(fr.Steps, StepResult{Request: step.Request, Binding: step.Binding, Status: stepResult.status})
 			verbosef(opt, "flow %q: request %q done (status=%d)", flow.Name, step.Binding, stepResult.status)
 		}
-		for _, as := range flow.Decl.Asserts {
+		for _, as := range asserts {
 			v, err := evalExpr(as.Expr, requestContext{flowVars: flowVars, flowViews: flowViews})
 			if err != nil {
 				res.Diags = append(res.Diags, runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate flow assertion", plan.EntryPath, as.Span, err.Error(), flow.Name, ""))

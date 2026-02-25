@@ -101,6 +101,35 @@ flow "single-step":
 	}
 }
 
+func TestExecuteFlowWithNilDecl(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	src := `
+base "` + srv.URL + `"
+
+req ping:
+	GET /health
+	? status == 200
+
+flow "single-step":
+	ping
+`
+	plan := mustCompilePlan(t, "runtime-nil-decl.pt", src)
+	plan.Flows[0].Decl = nil
+
+	result := Execute(context.Background(), plan, Options{})
+	if len(result.Diags) != 0 {
+		t.Fatalf("expected no diagnostics, got %+v", result.Diags)
+	}
+	if len(result.Flows) != 1 || len(result.Flows[0].Steps) != 1 {
+		t.Fatalf("unexpected flow result: %+v", result.Flows)
+	}
+}
+
 func TestExecuteTransportFailureDiagnostic(t *testing.T) {
 	src := `
 req only:
