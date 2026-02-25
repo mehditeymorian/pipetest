@@ -1,0 +1,7 @@
+.git
+.github
+bin
+pipetest
+**/*_test.go
+testdata
+*.md
