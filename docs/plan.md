@@ -26,7 +26,7 @@ req getMember:
   ? status == 200
 ```
 
-> You can still keep `${var}` interpolation for headers/body strings; `:param` is specifically for **path segments**.
+> Use `{{var}}` placeholders for variable interpolation in string values (headers/query/json/path strings and hook `print`/`println`/`printf` string args); `:param` remains supported specifically for **path segments**.
 
 ---
 

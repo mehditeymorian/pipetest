@@ -275,6 +275,46 @@ flow "print-int":
 	}
 }
 
+func TestExecuteHookPrintStatementsTemplateVariables(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	src := `
+base "` + srv.URL + `"
+
+let token = "abc123"
+let audience = "orders"
+
+req only:
+	GET /print
+	post hook {
+	  print "audience={{audience}} "
+	  println "token={{token}}"
+	  printf "status=%d token=%s", status, "{{token}}"
+	}
+	? status == 200
+
+flow "print-template-vars":
+	only
+`
+	plan := mustCompilePlan(t, "runtime-print-template-vars.pt", src)
+	out := captureStdout(t, func() {
+		result := Execute(context.Background(), plan, Options{})
+		if len(result.Diags) != 0 {
+			t.Fatalf("expected no diagnostics, got %+v", result.Diags)
+		}
+	})
+	if !strings.Contains(out, "audience=orders token=abc123") {
+		t.Fatalf("expected interpolated print output, got %q", out)
+	}
+	if !strings.Contains(out, "status=200 token=abc123") {
+		t.Fatalf("expected interpolated printf output, got %q", out)
+	}
+}
+
 func TestExecuteBuiltinUtilityFunctions(t *testing.T) {
 	t.Setenv("PIPETEST_EMAIL", "qa+dev@example.com")
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -304,6 +344,104 @@ flow "builtins":
 	result := Execute(context.Background(), plan, Options{})
 	if len(result.Diags) != 0 {
 		t.Fatalf("expected no diagnostics, got %+v", result.Diags)
+	}
+}
+
+func TestExecuteTemplateVariablesInStrings(t *testing.T) {
+	tokenSeen := ""
+	msgSeen := ""
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tokenSeen = r.Header.Get("Authorization")
+		msgSeen = r.URL.Query().Get("msg")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	src := `
+base "` + srv.URL + `"
+
+let token = "abc123"
+let audience = "orders"
+
+req list_orders:
+	GET /orders/{{audience}}
+	header Authorization = "Bearer {{token}}"
+	query msg = "hello-{{audience}}"
+	json { tokenValue: "{{token}}" }
+	? status == 200
+
+flow "template-vars":
+	list_orders
+	? list_orders.status == 200
+`
+	plan := mustCompilePlan(t, "runtime-template-vars.pt", src)
+	result := Execute(context.Background(), plan, Options{})
+	if len(result.Diags) != 0 {
+		t.Fatalf("expected no diagnostics, got %+v", result.Diags)
+	}
+	if tokenSeen != "Bearer abc123" {
+		t.Fatalf("expected templated authorization header, got %q", tokenSeen)
+	}
+	if msgSeen != "hello-orders" {
+		t.Fatalf("expected templated query value, got %q", msgSeen)
+	}
+}
+
+func TestExecuteTemplateVariablesMissingDiagnostic(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	src := `
+base "` + srv.URL + `"
+
+req list_orders:
+	GET /orders
+	header Authorization = "Bearer {{token}}"
+
+flow "template-vars-missing":
+	list_orders
+`
+	plan := mustCompilePlan(t, "runtime-template-vars-missing.pt", src)
+	result := Execute(context.Background(), plan, Options{})
+	if len(result.Diags) == 0 {
+		t.Fatalf("expected diagnostics")
+	}
+	if result.Diags[0].Code != "E_RUNTIME_MISSING_VARIABLE" {
+		t.Fatalf("expected E_RUNTIME_MISSING_VARIABLE, got %s", result.Diags[0].Code)
+	}
+}
+
+func TestExecuteHookPrintTemplateVariableMissingDiagnostic(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	src := `
+base "` + srv.URL + `"
+
+req only:
+	GET /print
+	post hook {
+	  println "token={{token}}"
+	}
+	? status == 200
+
+flow "print-template-vars-missing":
+	only
+`
+	plan := mustCompilePlan(t, "runtime-print-template-vars-missing.pt", src)
+	result := Execute(context.Background(), plan, Options{})
+	if len(result.Diags) == 0 {
+		t.Fatalf("expected diagnostics")
+	}
+	if result.Diags[0].Code != "E_RUNTIME_MISSING_VARIABLE" {
+		t.Fatalf("expected E_RUNTIME_MISSING_VARIABLE, got %s", result.Diags[0].Code)
 	}
 }
 

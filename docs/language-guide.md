@@ -280,7 +280,7 @@ Utility functions (callable in expressions/hooks):
 
 ## Path params in URLs
 
-Named path segments like `:group_id` are substituted from variables at execution time:
+Named path segments like `:group_id` are substituted from variables at execution time. String values can also interpolate flow/global variables using `{{var_name}}`:
 
 ```pt
 req getGroup:
@@ -288,6 +288,8 @@ req getGroup:
 ```
 
 If the variable is missing, runtime emits a deterministic error.
+
+The same `{{var_name}}` interpolation also applies to string arguments in hook `print`, `println`, and `printf` statements.
 
 ## 4) End-to-end example
 

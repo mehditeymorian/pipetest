@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -23,6 +24,7 @@ import (
 )
 
 var pathParamRuntimeRE = regexp.MustCompile(`:([A-Za-z_][A-Za-z0-9_]*)`)
+var templateVarRuntimeRE = regexp.MustCompile(`\{\{([A-Za-z_][A-Za-z0-9_]*)\}\}`)
 
 type Options struct {
 	BaseOverride              *string
@@ -172,7 +174,11 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 	if opt.BaseOverride != nil {
 		base = *opt.BaseOverride
 	}
-	path, err := renderPath(httpLine.Path, flowVars)
+	pathWithTemplates, err := interpolateString(httpLine.Path, flowVars)
+	if err != nil {
+		return nil, ptr(runtimeDiag("E_RUNTIME_MISSING_VARIABLE", "failed to render request path", plan.EntryPath, httpLine.Span, err.Error(), flowName, requestID))
+	}
+	path, err := renderPath(pathWithTemplates, flowVars)
 	if err != nil {
 		return nil, ptr(runtimeDiag("E_RUNTIME_MISSING_PATH_PARAM", err.Error(), plan.EntryPath, httpLine.Span, "define the missing variable in global/flow/request scope", flowName, requestID))
 	}
@@ -192,6 +198,9 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 			continue
 		}
 		if err := execHook(h, rctx); err != nil {
+			if isMissingTemplateVariableError(err) {
+				return nil, ptr(runtimeDiag("E_RUNTIME_MISSING_VARIABLE", "failed to render pre hook print statement", plan.EntryPath, h.Span, err.Error(), flowName, requestID))
+			}
 			return nil, ptr(runtimeDiag("E_RUNTIME_HOOK", "pre hook execution failed", plan.EntryPath, h.Span, err.Error(), flowName, requestID))
 		}
 	}
@@ -202,17 +211,29 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 			if err != nil {
 				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate header directive", plan.EntryPath, l.Span, err.Error(), flowName, requestID))
 			}
+			v, err = interpolateValue(v, flowVars)
+			if err != nil {
+				return nil, ptr(runtimeDiag("E_RUNTIME_MISSING_VARIABLE", "failed to render header directive", plan.EntryPath, l.Span, err.Error(), flowName, requestID))
+			}
 			reqObj["header"].(map[string]any)[l.Key.Name] = fmt.Sprint(v)
 		case *ast.QueryDirective:
 			v, err := evalExpr(l.Value, rctx)
 			if err != nil {
 				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate query directive", plan.EntryPath, l.Span, err.Error(), flowName, requestID))
 			}
+			v, err = interpolateValue(v, flowVars)
+			if err != nil {
+				return nil, ptr(runtimeDiag("E_RUNTIME_MISSING_VARIABLE", "failed to render query directive", plan.EntryPath, l.Span, err.Error(), flowName, requestID))
+			}
 			reqObj["query"].(map[string]any)[l.Key.Name] = fmt.Sprint(v)
 		case *ast.AuthDirective:
 			v, err := evalExpr(l.Value, rctx)
 			if err != nil {
 				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate auth directive", plan.EntryPath, l.Span, err.Error(), flowName, requestID))
+			}
+			v, err = interpolateValue(v, flowVars)
+			if err != nil {
+				return nil, ptr(runtimeDiag("E_RUNTIME_MISSING_VARIABLE", "failed to render auth directive", plan.EntryPath, l.Span, err.Error(), flowName, requestID))
 			}
 			if l.Scheme == ast.AuthBearer {
 				reqObj["header"].(map[string]any)["Authorization"] = "Bearer " + fmt.Sprint(v)
@@ -221,6 +242,10 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 			v, err := evalExpr(l.Value, rctx)
 			if err != nil {
 				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate json directive", plan.EntryPath, l.Span, err.Error(), flowName, requestID))
+			}
+			v, err = interpolateValue(v, flowVars)
+			if err != nil {
+				return nil, ptr(runtimeDiag("E_RUNTIME_MISSING_VARIABLE", "failed to render json directive", plan.EntryPath, l.Span, err.Error(), flowName, requestID))
 			}
 			reqObj["json"] = v
 		}
@@ -280,6 +305,9 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 			continue
 		}
 		if err := execHook(h, rctx); err != nil {
+			if isMissingTemplateVariableError(err) {
+				return nil, ptr(runtimeDiag("E_RUNTIME_MISSING_VARIABLE", "failed to render post hook print statement", plan.EntryPath, h.Span, err.Error(), flowName, requestID))
+			}
 			return nil, ptr(runtimeDiag("E_RUNTIME_HOOK", "post hook execution failed", plan.EntryPath, h.Span, err.Error(), flowName, requestID))
 		}
 	}
@@ -519,6 +547,59 @@ func renderPath(path string, vars map[string]any) (string, error) {
 	return out, nil
 }
 
+type missingTemplateVariableError struct {
+	name string
+}
+
+func (e *missingTemplateVariableError) Error() string {
+	return fmt.Sprintf("missing variable %s for template placeholder", e.name)
+}
+
+func interpolateString(in string, vars map[string]any) (string, error) {
+	out := in
+	for _, m := range templateVarRuntimeRE.FindAllStringSubmatch(in, -1) {
+		if _, ok := vars[m[1]]; !ok {
+			return "", &missingTemplateVariableError{name: m[1]}
+		}
+		out = strings.ReplaceAll(out, m[0], fmt.Sprint(vars[m[1]]))
+	}
+	return out, nil
+}
+
+func isMissingTemplateVariableError(err error) bool {
+	var target *missingTemplateVariableError
+	return errors.As(err, &target)
+}
+
+func interpolateValue(v any, vars map[string]any) (any, error) {
+	switch x := v.(type) {
+	case string:
+		return interpolateString(x, vars)
+	case []any:
+		out := make([]any, 0, len(x))
+		for _, item := range x {
+			rendered, err := interpolateValue(item, vars)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, rendered)
+		}
+		return out, nil
+	case map[string]any:
+		out := map[string]any{}
+		for k, item := range x {
+			rendered, err := interpolateValue(item, vars)
+			if err != nil {
+				return nil, err
+			}
+			out[k] = rendered
+		}
+		return out, nil
+	default:
+		return v, nil
+	}
+}
+
 func combineURL(base, path string) string {
 	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
 		return path
@@ -573,6 +654,10 @@ func execPrintStmt(stmt *ast.PrintStmt, rctx requestContext) error {
 	args := make([]any, 0, len(stmt.Args))
 	for _, arg := range stmt.Args {
 		v, err := evalExpr(arg, rctx)
+		if err != nil {
+			return err
+		}
+		v, err = interpolateValue(v, rctx.flowVars)
 		if err != nil {
 			return err
 		}
