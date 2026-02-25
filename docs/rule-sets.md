@@ -280,7 +280,7 @@ Checks:
 1. Flow body ordering:
 
    * **Prelude**: only `let` statements (0+)
-   * then exactly **one** chain line (must contain at least one `->`)
+   * then exactly **one** chain line (single-step allowed, `->` required only for multi-step chains)
    * then **postlude**: only assertions (`? expr`) (0+)
 2. Chain format:
 

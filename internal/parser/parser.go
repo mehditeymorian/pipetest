@@ -410,14 +410,9 @@ func (p *Parser) parseFlowDecl() *ast.FlowDecl {
 
 func (p *Parser) parseFlowChainLine() []ast.FlowStep {
 	steps := []ast.FlowStep{p.parseFlowStepRef()}
-	arrowCount := 0
 	for p.cur.Kind == lexer.ARROW {
-		arrowCount++
 		p.advance()
 		steps = append(steps, p.parseFlowStepRef())
-	}
-	if arrowCount == 0 {
-		p.addError(ErrInvalidFlow, "flow chain must use '->' format", "add '->' between steps", p.cur.Span)
 	}
 	return steps
 }

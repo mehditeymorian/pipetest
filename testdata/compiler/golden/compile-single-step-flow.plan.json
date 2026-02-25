@@ -1,0 +1,36 @@
+{
+  "entry_path": "../../testdata/compiler/valid/compile-single-step-flow.pt",
+  "requests": [
+    {
+      "name": "login",
+      "http": {
+        "Method": 0,
+        "Path": "/auth/login",
+        "Span": {
+          "Start": {
+            "Offset": 45,
+            "Line": 4,
+            "Column": 3
+          },
+          "End": {
+            "Offset": 60,
+            "Line": 4,
+            "Column": 18
+          }
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "name": "single-step",
+      "steps": [
+        {
+          "request": "login",
+          "binding": "login"
+        }
+      ],
+      "lets": null
+    }
+  ]
+}

@@ -329,7 +329,7 @@ func (p *Parser) parseHookBlock() ReqLine {
 Flow format enforced at parse time:
 
 * Prelude: `let` only (0+)
-* Then exactly **one** chain line with **at least one** `->`
+* Then exactly **one** chain line with one or more step references (`->` only needed for multi-step chains)
 * Postlude: assertions only (0+)
 
 Plus: allow alias `listOrders : orders1`
@@ -352,7 +352,7 @@ func (p *Parser) parseFlowDecl() Stmt {
 		p.expect(NL, "expected newline after let")
 	}
 
-	// Chain line (must contain at least one ->)
+	// Chain line (single-step or arrow chain)
 	chain := p.parseFlowChainLine()
 	p.expect(NL, "expected newline after chain line")
 
@@ -376,14 +376,9 @@ func (p *Parser) parseFlowDecl() Stmt {
 
 func (p *Parser) parseFlowChainLine() []FlowStep {
 	steps := []FlowStep{p.parseFlowStepRef()}
-	arrowCount := 0
 	for p.cur.Kind == ARROW {
-		arrowCount++
 		p.advance()
 		steps = append(steps, p.parseFlowStepRef())
-	}
-	if arrowCount == 0 {
-		p.errs = append(p.errs, fmt.Errorf("flow chain must use '->' format"))
 	}
 	return steps
 }

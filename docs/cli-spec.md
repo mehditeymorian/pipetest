@@ -91,7 +91,7 @@ Use a stable structure:
 Example:
 
 ```text
-ERROR E_FLOW_MISSING_CHAIN tests/orders.pt:42:3 flow must contain a chain line using '->'
+ERROR E_FLOW_MISSING_CHAIN tests/orders.pt:42:3 flow must contain a chain line
   hint: add a chain line after flow prelude lets
 ```
 

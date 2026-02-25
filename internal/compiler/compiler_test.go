@@ -17,19 +17,28 @@ import (
 var update = flag.Bool("update-compiler", false, "update compiler golden files")
 
 func TestCompileValidPlan(t *testing.T) {
-	mods := loadModules(t,
-		"../../testdata/compiler/valid/compile-single-flow.pt",
-	)
-	plan, diags := Compile("../../testdata/compiler/valid/compile-single-flow.pt", mods)
-	if len(diags) != 0 {
-		t.Fatalf("expected no diagnostics, got %+v", diags)
+	tests := []struct {
+		name   string
+		entry  string
+		golden string
+	}{
+		{name: "multi-step-flow", entry: "../../testdata/compiler/valid/compile-single-flow.pt", golden: "../../testdata/compiler/golden/compile-single-flow.plan.json"},
+		{name: "single-step-flow", entry: "../../testdata/compiler/valid/compile-single-step-flow.pt", golden: "../../testdata/compiler/golden/compile-single-step-flow.plan.json"},
 	}
-	got, err := json.MarshalIndent(plan, "", "  ")
-	if err != nil {
-		t.Fatal(err)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mods := loadModules(t, tc.entry)
+			plan, diags := Compile(tc.entry, mods)
+			if len(diags) != 0 {
+				t.Fatalf("expected no diagnostics, got %+v", diags)
+			}
+			got, err := json.MarshalIndent(plan, "", "  ")
+			if err != nil {
+				t.Fatal(err)
+			}
+			assertGolden(t, tc.golden, got)
+		})
 	}
-	golden := "../../testdata/compiler/golden/compile-single-flow.plan.json"
-	assertGolden(t, golden, got)
 }
 
 func TestCompileInvalidDiagnostics(t *testing.T) {

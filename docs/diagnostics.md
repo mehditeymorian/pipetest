@@ -86,7 +86,7 @@ Optional fields:
     {
       "severity": "error",
       "code": "E_SEM_FLOW_MISSING_CHAIN",
-      "message": "flow must contain a chain line using '->'",
+      "message": "flow must contain a chain line",
       "file": "tests/orders.pt",
       "line": 42,
       "column": 3,
@@ -118,7 +118,7 @@ Notes:
 Parse/semantic/import style:
 
 ```text
-ERROR E_SEM_FLOW_MISSING_CHAIN tests/orders.pt:42:3 flow must contain a chain line using '->'
+ERROR E_SEM_FLOW_MISSING_CHAIN tests/orders.pt:42:3 flow must contain a chain line
   hint: add a chain line after flow prelude lets
 ```
 

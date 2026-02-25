@@ -78,7 +78,7 @@ If a request assigns a variable that already exists, it **overwrites** it in the
 A flow has three zones:
 
 1. **Prelude**: only `let ...` (optional)
-2. **Chain line**: exactly one line, using `->`
+2. **Chain line**: exactly one line, with one or more request steps (single step allowed; use `->` for multi-step chains)
 3. **Postlude**: assertions (and optionally reporting calls later, if you add them)
 
 Example:
@@ -92,6 +92,15 @@ flow "happy path":
   ? createOrder.status in [200, 201]
   ? listOrders.status == 200
   ? listOrders.res.items contains { id: orderId }
+```
+
+Single-step flow is also valid:
+
+```pt
+flow "smoke":
+  login
+
+  ? login.status == 200
 ```
 
 ---

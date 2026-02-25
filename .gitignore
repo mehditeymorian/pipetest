@@ -1,3 +1,4 @@
 .gocache
 .golangci-cache
 .idea
+.gomodcache
