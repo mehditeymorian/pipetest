@@ -2,10 +2,11 @@
 
 `pipetest` is a scripting language for testing APIs and API flows. It is a general-purpose tool intended for public use, and it does not expose an API or SDK.
 
-`pipetest` has two primary user commands:
+`pipetest` has three primary user commands:
 
 - `pipetest eval program.pt`
 - `pipetest run program.pt`
+- `pipetest request program.pt <request-name>`
 
 This repository currently contains the language grammar and design notes. The next implementation milestone is to deliver the lexer/parser, compiler (semantic analyzer + planner), and executor/runtime.
 
@@ -73,7 +74,7 @@ pipetest eval path/to/program.pt
 Run flows and generate reports:
 
 ```bash
-pipetest run path/to/program.pt --report-dir ./pipetest-report
+pipetest run path/to/program.pt --report-dir ./pipetest-report --verbose
 ```
 
 `pipetest run` writes these artifacts in the report directory:

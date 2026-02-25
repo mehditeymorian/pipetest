@@ -17,7 +17,7 @@ var builtins = map[string]struct{}{
 }
 
 var reservedNames = map[string]struct{}{
-	"req": {}, "res": {}, "status": {}, "header": {}, "$": {},
+	"req": {}, "res": {}, "status": {}, "header": {}, "$": {}, "#": {},
 }
 
 // Module binds a parsed program to its canonical path.
@@ -193,8 +193,8 @@ func (c *compiler) passRequests() {
 					if refsExprInHook(l, isResRef) {
 						c.addDiagAt("E_SEM_PRE_HOOK_REFERENCES_RES", "pre hook cannot reference res", req.File, l.Span, "use req or flow variables in pre hook")
 					}
-					if refsExprInHook(l, isDollarRef) {
-						c.addDiagAt("E_SEM_PRE_HOOK_REFERENCES_DOLLAR", "pre hook cannot reference $", req.File, l.Span, "move response access to post hook")
+					if refsExprInHook(l, isHashRef) {
+						c.addDiagAt("E_SEM_PRE_HOOK_REFERENCES_RES", "pre hook cannot reference #", req.File, l.Span, "move response access to post hook")
 					}
 				}
 				if l.Kind == ast.HookPost {
@@ -388,38 +388,38 @@ func isResRef(expr ast.Expr) bool {
 	return false
 }
 
-func isDollarRef(expr ast.Expr) bool {
+func isHashRef(expr ast.Expr) bool {
 	switch e := expr.(type) {
-	case *ast.DollarExpr:
+	case *ast.HashExpr:
 		return true
 	case *ast.UnaryExpr:
-		return isDollarRef(e.X)
+		return isHashRef(e.X)
 	case *ast.BinaryExpr:
-		return isDollarRef(e.Left) || isDollarRef(e.Right)
+		return isHashRef(e.Left) || isHashRef(e.Right)
 	case *ast.CallExpr:
-		if isDollarRef(e.Callee) {
+		if isHashRef(e.Callee) {
 			return true
 		}
 		for _, a := range e.Args {
-			if isDollarRef(a) {
+			if isHashRef(a) {
 				return true
 			}
 		}
 	case *ast.FieldExpr:
-		return isDollarRef(e.X)
+		return isHashRef(e.X)
 	case *ast.IndexExpr:
-		return isDollarRef(e.X) || isDollarRef(e.Index)
+		return isHashRef(e.X) || isHashRef(e.Index)
 	case *ast.ParenExpr:
-		return isDollarRef(e.X)
+		return isHashRef(e.X)
 	case *ast.ArrayLit:
 		for _, el := range e.Elements {
-			if isDollarRef(el) {
+			if isHashRef(el) {
 				return true
 			}
 		}
 	case *ast.ObjectLit:
 		for _, p := range e.Pairs {
-			if isDollarRef(p.Value) {
+			if isHashRef(p.Value) {
 				return true
 			}
 		}

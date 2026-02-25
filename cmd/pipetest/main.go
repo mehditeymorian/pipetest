@@ -22,8 +22,9 @@ import (
 )
 
 const (
-	evalUsage = "pipetest eval <program.pt> [--format pretty|json]"
-	runUsage  = "pipetest run <program.pt> [--report-dir dir] [--format pretty|json] [--timeout duration]"
+	evalUsage    = "pipetest eval <program.pt> [--format pretty|json]"
+	runUsage     = "pipetest run <program.pt> [--report-dir dir] [--format pretty|json] [--timeout duration] [--verbose]"
+	requestUsage = "pipetest request <program.pt> <request-name> [--format pretty|json] [--timeout duration] [--verbose]"
 )
 
 type cliExitError struct {
@@ -80,7 +81,7 @@ func newRootCmd(stdout, stderr io.Writer) *cobra.Command {
 	}
 	root.SetOut(stdout)
 	root.SetErr(stderr)
-	root.AddCommand(newEvalCmd(stdout), newRunCmd(stdout))
+	root.AddCommand(newEvalCmd(stdout), newRunCmd(stdout), newRequestCmd(stdout))
 	return root
 }
 
@@ -119,6 +120,7 @@ func newRunCmd(stdout io.Writer) *cobra.Command {
 		format    string
 		reportDir string
 		timeout   string
+		verbose   bool
 	)
 
 	runCmd := &cobra.Command{
@@ -134,7 +136,7 @@ func newRunCmd(stdout io.Writer) *cobra.Command {
 			if err := validateFormat(format); err != nil {
 				return &cliExitError{code: 2, msg: err.Error()}
 			}
-			runtimeOpt := runtime.Options{}
+			runtimeOpt := runtime.Options{Verbose: verbose, LogWriter: stdout}
 			if timeout != "" {
 				d, err := time.ParseDuration(timeout)
 				if err != nil {
@@ -176,7 +178,81 @@ func newRunCmd(stdout io.Writer) *cobra.Command {
 	runCmd.Flags().StringVar(&format, "format", "pretty", "stdout format: pretty|json")
 	runCmd.Flags().StringVar(&reportDir, "report-dir", "./pipetest-report", "directory for report artifacts")
 	runCmd.Flags().StringVar(&timeout, "timeout", "", "override timeout setting, e.g. 2s")
+	runCmd.Flags().BoolVar(&verbose, "verbose", false, "print verbose execution logs")
 	return runCmd
+}
+
+func newRequestCmd(stdout io.Writer) *cobra.Command {
+	var (
+		format  string
+		timeout string
+		verbose bool
+	)
+
+	requestCmd := &cobra.Command{
+		Use:   "request <program.pt> <request-name>",
+		Short: "Compile and execute a single request",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 2 {
+				return &cliExitError{code: 2, msg: "usage: " + requestUsage}
+			}
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := validateFormat(format); err != nil {
+				return &cliExitError{code: 2, msg: err.Error()}
+			}
+			runtimeOpt := runtime.Options{Verbose: verbose, LogWriter: stdout}
+			if timeout != "" {
+				d, err := time.ParseDuration(timeout)
+				if err != nil {
+					return &cliExitError{code: 2, msg: fmt.Sprintf("invalid --timeout value: %v", err)}
+				}
+				runtimeOpt.TimeoutOverride = &d
+			}
+
+			plan, _, allDiags := compileProgram(args[0])
+			allDiags = diagnostics.SortAndDedupe(allDiags)
+			if len(allDiags) > 0 {
+				if err := printCommandResult(stdout, "request", format, allDiags, nil); err != nil {
+					return &cliExitError{code: 1, msg: fmt.Sprintf("failed to write output: %v", err)}
+				}
+				return &cliExitError{code: 1}
+			}
+
+			requestName := args[1]
+			found := false
+			for _, req := range plan.Requests {
+				if req.Name == requestName {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return &cliExitError{code: 2, msg: fmt.Sprintf("request %q not found in %s", requestName, args[0])}
+			}
+
+			single := *plan
+			single.Flows = []compiler.PlanFlow{{
+				Name:  "request:" + requestName,
+				Steps: []compiler.PlanStep{{Request: requestName, Binding: requestName}},
+			}}
+
+			result := runtime.Execute(context.Background(), &single, runtimeOpt)
+			result.Diags = diagnostics.SortAndDedupe(result.Diags)
+			if err := printCommandResult(stdout, "request", format, result.Diags, nil); err != nil {
+				return &cliExitError{code: 1, msg: fmt.Sprintf("failed to write output: %v", err)}
+			}
+			if len(result.Diags) > 0 {
+				return &cliExitError{code: 1}
+			}
+			return nil
+		},
+	}
+	requestCmd.Flags().StringVar(&format, "format", "pretty", "stdout format: pretty|json")
+	requestCmd.Flags().StringVar(&timeout, "timeout", "", "override timeout setting, e.g. 2s")
+	requestCmd.Flags().BoolVar(&verbose, "verbose", false, "print verbose execution logs")
+	return requestCmd
 }
 
 func validateFormat(format string) error {
@@ -301,5 +377,6 @@ func printUsage(stderr io.Writer) {
 func rootUsage() string {
 	return `Usage:
   ` + evalUsage + `
-  ` + runUsage
+  ` + runUsage + `
+  ` + requestUsage
 }

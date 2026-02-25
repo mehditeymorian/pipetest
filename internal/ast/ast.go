@@ -376,12 +376,19 @@ type NullLit struct {
 func (*NullLit) exprNode()    {}
 func (*NullLit) literalNode() {}
 
-// DollarExpr references the current JSON root.
+// DollarExpr references the current request object.
 type DollarExpr struct {
 	Span Span
 }
 
 func (*DollarExpr) exprNode() {}
+
+// HashExpr references the current response JSON root.
+type HashExpr struct {
+	Span Span
+}
+
+func (*HashExpr) exprNode() {}
 
 // ArrayLit is an array literal.
 type ArrayLit struct {

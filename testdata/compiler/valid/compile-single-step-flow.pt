@@ -1,10 +1,10 @@
 base "https://api.example.com"
 
 req login:
-  GET /auth/login
-  ? status == 200
+	GET /auth/login
+	? status == 200
 
 flow "single-step":
-  login
+	login
 
-  ? login.status == 200
+	? login.status == 200

@@ -1,7 +1,7 @@
 req sample:
-  GET /sample
-  post hook {
-    print "hello", 42
-    println
-    printf "token=%s", "abc"
-  }
+	GET /sample
+	post hook {
+		print "hello", 42
+		println
+		printf "token=%s", "abc"
+	}

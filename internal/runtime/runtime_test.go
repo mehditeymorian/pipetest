@@ -36,26 +36,26 @@ func TestExecuteFlowChainWithHooksAndPropagation(t *testing.T) {
 base "` + srv.URL + `"
 
 req first:
-  GET /first
-  pre hook {
-    req.header["X-From-Pre"] = "yes"
-  }
-  ? status == 200
-  let token = $.token
+	GET /first
+	pre hook {
+	  req.header["X-From-Pre"] = "yes"
+	}
+	? status == 200
+	let token = #.token
 
 req second:
-  GET /second/:token
-  post hook {
-    seen = $.seen
-  }
-  ? status == 200
-  ? $.fromHeader == "yes"
-  let final = $.final
+	GET /second/:token
+	post hook {
+	  seen = #.seen
+	}
+	? status == 200
+	? #.fromHeader == "yes"
+	let final = #.final
 
 flow "runtime-flow":
-  first -> second : secondAlias
-  ? secondAlias.res.seen == token
-  ? final == "ok"
+	first -> second : secondAlias
+	? secondAlias.res.seen == token
+	? final == "ok"
 `
 	plan := mustCompilePlan(t, "runtime-valid.pt", src)
 	result := Execute(context.Background(), plan, Options{})
@@ -84,12 +84,12 @@ func TestExecuteSingleStepFlow(t *testing.T) {
 base "` + srv.URL + `"
 
 req ping:
-  GET /health
-  ? status == 200
+	GET /health
+	? status == 200
 
 flow "single-step":
-  ping
-  ? ping.status == 200
+	ping
+	? ping.status == 200
 `
 	plan := mustCompilePlan(t, "runtime-single-step.pt", src)
 	result := Execute(context.Background(), plan, Options{})
@@ -104,10 +104,10 @@ flow "single-step":
 func TestExecuteTransportFailureDiagnostic(t *testing.T) {
 	src := `
 req only:
-  GET http://127.0.0.1:1/unreachable
+	GET http://127.0.0.1:1/unreachable
 
 flow "broken":
-  only -> only : again
+	only -> only : again
 `
 	plan := mustCompilePlan(t, "runtime-invalid.pt", src)
 	result := Execute(context.Background(), plan, Options{})
@@ -130,17 +130,17 @@ func TestExecuteHookPrintStatements(t *testing.T) {
 base "` + srv.URL + `"
 
 req only:
-  GET /print
-  post hook {
-    print "token="
-    println $.token
-    printf "status=%d", status
-  }
-  ? status == 200
+	GET /print
+	post hook {
+	  print "token="
+	  println #.token
+	  printf "status=%d", status
+	}
+	? status == 200
 
 flow "print-flow":
-  only
-  ? only.status == 200
+	only
+	? only.status == 200
 `
 	plan := mustCompilePlan(t, "runtime-print.pt", src)
 	out := captureStdout(t, func() {
@@ -168,15 +168,15 @@ func TestExecuteHookPrintfIntegerLiteralWithPercentD(t *testing.T) {
 base "` + srv.URL + `"
 
 req only:
-  GET /get
-  post hook {
-    printf "status: %d\n", 2
-  }
-  ? status == 200
+	GET /get
+	post hook {
+	  printf "status: %d\n", 2
+	}
+	? status == 200
 
 flow "print-int":
-  only
-  ? only.status == 200
+	only
+	? only.status == 200
 `
 	plan := mustCompilePlan(t, "runtime-print-int.pt", src)
 	out := captureStdout(t, func() {

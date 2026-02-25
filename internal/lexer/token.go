@@ -56,6 +56,7 @@ const (
 	ARROW     // ->
 	QUESTION  // ?
 	DOLLAR    // $
+	HASH      // #
 	COLON     // :
 	COMMA     // ,
 	DOT       // .
@@ -130,6 +131,7 @@ var kindNames = [...]string{
 	ARROW:       "ARROW",
 	QUESTION:    "QUESTION",
 	DOLLAR:      "DOLLAR",
+	HASH:        "HASH",
 	COLON:       "COLON",
 	COMMA:       "COMMA",
 	DOT:         "DOT",

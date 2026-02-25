@@ -13,10 +13,10 @@ func TestEvalSuccess(t *testing.T) {
 	dir := t.TempDir()
 	program := `
 req ping:
-  GET https://example.com
+	GET https://example.com
 
 flow "ok":
-  ping -> ping:again
+	ping -> ping:again
 `
 	path := filepath.Join(dir, "program.pt")
 	if err := os.WriteFile(path, []byte(program), 0o644); err != nil {
@@ -37,10 +37,10 @@ func TestRunWritesReportsOnFailure(t *testing.T) {
 	reportDir := filepath.Join(dir, "artifacts")
 	program := `
 req only:
-  GET http://127.0.0.1:1/unreachable
+	GET http://127.0.0.1:1/unreachable
 
 flow "broken":
-  only -> only:again
+	only -> only:again
 `
 	path := filepath.Join(dir, "program.pt")
 	if err := os.WriteFile(path, []byte(program), 0o644); err != nil {
@@ -67,7 +67,7 @@ func TestRunSuccessSummary(t *testing.T) {
 
 	dir := t.TempDir()
 	reportDir := filepath.Join(dir, "artifacts")
-	program := "\nreq only:\n  GET " + srv.URL + "\n\nflow \"ok\":\n  only -> only:again\n"
+	program := "\nreq only:\n\tGET " + srv.URL + "\n\nflow \"ok\":\n\tonly -> only:again\n"
 	path := filepath.Join(dir, "program.pt")
 	if err := os.WriteFile(path, []byte(program), 0o644); err != nil {
 		t.Fatalf("write program: %v", err)
@@ -79,6 +79,53 @@ func TestRunSuccessSummary(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "flows=1 tests=2 failures=0 errors=0") {
 		t.Fatalf("unexpected output: %q", out.String())
+	}
+}
+
+func TestRequestCommandRunsSingleRequest(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	program := "\nreq only:\n\tGET " + srv.URL + "\n\nreq other:\n\tGET " + srv.URL + "\n"
+	path := filepath.Join(dir, "program.pt")
+	if err := os.WriteFile(path, []byte(program), 0o644); err != nil {
+		t.Fatalf("write program: %v", err)
+	}
+	var out, errOut strings.Builder
+	exitCode := run([]string{"request", path, "only"}, &out, &errOut)
+	if exitCode != 0 {
+		t.Fatalf("expected exit 0, got %d stderr=%s", exitCode, errOut.String())
+	}
+	if strings.Contains(out.String(), "ERROR") {
+		t.Fatalf("unexpected diagnostics: %q", out.String())
+	}
+}
+
+func TestRunVerboseLogging(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	reportDir := filepath.Join(dir, "artifacts")
+	program := "\nreq only:\n\tGET " + srv.URL + "\n\nflow \"ok\":\n\tonly\n"
+	path := filepath.Join(dir, "program.pt")
+	if err := os.WriteFile(path, []byte(program), 0o644); err != nil {
+		t.Fatalf("write program: %v", err)
+	}
+	var out, errOut strings.Builder
+	exitCode := run([]string{"run", "--verbose", "--report-dir", reportDir, path}, &out, &errOut)
+	if exitCode != 0 {
+		t.Fatalf("expected exit 0, got %d stderr=%s", exitCode, errOut.String())
+	}
+	if !strings.Contains(out.String(), "[verbose]") {
+		t.Fatalf("expected verbose output, got %q", out.String())
 	}
 }
 

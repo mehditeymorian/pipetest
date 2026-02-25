@@ -8,14 +8,14 @@
         "Path": "/auth/login",
         "Span": {
           "Start": {
-            "Offset": 45,
+            "Offset": 44,
             "Line": 4,
-            "Column": 3
+            "Column": 2
           },
           "End": {
-            "Offset": 60,
+            "Offset": 59,
             "Line": 4,
-            "Column": 18
+            "Column": 17
           }
         }
       }

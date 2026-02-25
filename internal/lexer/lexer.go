@@ -103,8 +103,11 @@ func (l *Lexer) Next() Token {
 			l.consumeWhitespace()
 			continue
 		case '#':
-			l.skipComment()
-			continue
+			if l.hashStartsComment() {
+				l.skipComment()
+				continue
+			}
+			return l.scanToken()
 		case '\n', '\r':
 			l.handleNewline()
 			if len(l.queue) > 0 {
@@ -163,14 +166,21 @@ func (l *Lexer) handleLineStart() {
 	indent := 0
 	for {
 		r := l.peek()
-		if r == ' ' {
-			indent++
+		if r == '\t' {
+			if l.hookDepth == 0 && l.exprDepth() == 0 {
+				indent++
+			}
 			l.advance()
 			continue
 		}
-		if r == '\t' {
-			l.addError(ErrTab, "tab indentation is not allowed", "replace tabs with spaces", spanAt(l.position()))
-			indent++
+		if r == ' ' {
+			if l.hookDepth == 0 && l.exprDepth() == 0 {
+				l.addError(ErrTab, "space indentation is not allowed", "replace spaces with tabs", spanAt(l.position()))
+				for l.peek() == ' ' {
+					l.advance()
+				}
+				continue
+			}
 			l.advance()
 			continue
 		}
@@ -178,7 +188,7 @@ func (l *Lexer) handleLineStart() {
 	}
 
 	r := l.peek()
-	if r == '#' {
+	if r == '#' && l.hashStartsComment() {
 		l.skipComment()
 		return
 	}
@@ -248,12 +258,22 @@ func (l *Lexer) consumeWhitespace() {
 		case ' ':
 			l.advance()
 		case '\t':
-			l.addError(ErrTab, "tab characters are not allowed", "replace tabs with spaces", spanAt(l.position()))
 			l.advance()
 		default:
 			return
 		}
 	}
+}
+
+func (l *Lexer) hashStartsComment() bool {
+	next := l.peekN(1)
+	if next == 0 || next == '\n' || next == '\r' {
+		return true
+	}
+	if unicode.IsSpace(next) {
+		return true
+	}
+	return false
 }
 
 func (l *Lexer) skipComment() {
@@ -364,6 +384,9 @@ func (l *Lexer) scanOperatorOrPunct() (Token, bool) {
 	case '$':
 		l.advance()
 		return l.token(DOLLAR, "$", start), true
+	case '#':
+		l.advance()
+		return l.token(HASH, "#", start), true
 	case ',':
 		l.advance()
 		return l.token(COMMA, ",", start), true

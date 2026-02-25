@@ -3,15 +3,15 @@ base "https://api.example.com"
 let group_id = "g1"
 
 req login:
-  POST /auth/login
-  json { email: env("EMAIL") }
-  let token = "t1"
+	POST /auth/login
+	json { email: env("EMAIL") }
+	let token = "t1"
 
 req listOrders:
-  GET /groups/:group_id/orders
-  auth bearer token
+	GET /groups/:group_id/orders
+	auth bearer token
 
 flow "happy":
-  login -> listOrders : orders
+	login -> listOrders : orders
 
-  ? orders.status == 200
+	? orders.status == 200

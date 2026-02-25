@@ -64,7 +64,7 @@ req login:
   POST /auth/login
   json { email: env("EMAIL"), password: env("PASS") }
   ? status == 200
-  let token = $.token    # available to subsequent requests in the same flow
+  let token = #.token    # available to subsequent requests in the same flow
 ```
 
 If a request assigns a variable that already exists, it **overwrites** it in the flow.
@@ -124,7 +124,8 @@ Examples:
 
 Inside a request block, you still have:
 
-* `$` as the current response JSON root
+* `$` as the current request object
+* `#` as the current response JSON root
 * `status` as the current HTTP status
 * `header[...]` as current response headers
 
@@ -179,7 +180,7 @@ req login:
   }
 
   ? status == 200
-  let token = $.token
+  let token = #.token
 ```
 
 Hook timing per request execution:
@@ -211,7 +212,7 @@ req login:
   }
 
   ? status == 200
-  let token = $.token
+  let token = #.token
 
 req authed:
   auth bearer token
@@ -221,7 +222,7 @@ req createOrder(authed):
   POST /groups/:group_id/orders
   json { itemId: 42, qty: 1 }
   ? status in [200, 201]
-  let orderId = $.id
+  let orderId = #.id
 
 req listOrders(authed):
   GET /groups/:group_id/orders

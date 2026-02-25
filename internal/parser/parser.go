@@ -622,6 +622,10 @@ func (p *Parser) parsePrimary() ast.Expr {
 		tok := p.cur
 		p.advance()
 		return &ast.DollarExpr{Span: toASTSpan(tok.Span)}
+	case lexer.HASH:
+		tok := p.cur
+		p.advance()
+		return &ast.HashExpr{Span: toASTSpan(tok.Span)}
 	case lexer.LPAREN:
 		startTok := p.cur
 		p.advance()
@@ -652,7 +656,10 @@ func (p *Parser) exprToLValue(expr ast.Expr) (*ast.LValue, bool) {
 		}
 		return &ast.LValue{Root: root, Span: e.Span}, true
 	case *ast.DollarExpr:
-		root := ast.LValueRoot{Kind: ast.LValueDollar, Name: "$", Span: e.Span}
+		root := ast.LValueRoot{Kind: ast.LValueReq, Name: "$", Span: e.Span}
+		return &ast.LValue{Root: root, Span: e.Span}, true
+	case *ast.HashExpr:
+		root := ast.LValueRoot{Kind: ast.LValueRes, Name: "#", Span: e.Span}
 		return &ast.LValue{Root: root, Span: e.Span}, true
 	case *ast.FieldExpr:
 		base, ok := p.exprToLValue(e.X)
@@ -886,6 +893,8 @@ func exprSpan(expr ast.Expr) ast.Span {
 	case *ast.NullLit:
 		return e.Span
 	case *ast.DollarExpr:
+		return e.Span
+	case *ast.HashExpr:
 		return e.Span
 	case *ast.ArrayLit:
 		return e.Span

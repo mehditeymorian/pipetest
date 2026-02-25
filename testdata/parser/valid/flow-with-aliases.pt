@@ -1,5 +1,5 @@
 flow "alias flow":
-  let group_id = "g"
-  login -> listOrders : orders1 -> listOrders : orders2
-  ? orders1.status == 200
-  ? orders2.status == 200
+	let group_id = "g"
+	login -> listOrders : orders1 -> listOrders : orders2
+	? orders1.status == 200
+	? orders2.status == 200

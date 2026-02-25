@@ -5,7 +5,7 @@ This document defines expected behavior for the `pipetest` command-line interfac
 
 ## Commands
 
-`pipetest` has two commands: `eval` for static evaluation and `run` for executing scripts.
+`pipetest` has three commands: `eval` for static evaluation, `run` for executing flows, and `request` for executing a single request.
 
 ## `pipetest eval <program.pt>`
 
@@ -65,6 +65,7 @@ pipetest run examples/happy-path.pt
 - `--format <pretty|json>`: stdout format
 - `--fail-fast`: stop all execution after first flow failure
 - `--timeout <duration>`: override global timeout from file
+- `--verbose`: print execution progress logs while running requests
 
 ---
 
@@ -124,4 +125,28 @@ pipetest:
       junit: artifacts/pipetest-junit.xml
     paths:
       - artifacts/pipetest-report.json
+```
+
+
+## `pipetest request <program.pt> <request-name>`
+
+Compile and execute exactly one request from the program.
+
+### Responsibilities
+
+- run all `eval` checks first
+- verify the target request exists
+- execute only the selected request once
+- print diagnostics/summary to stdout
+
+### Exit codes
+
+- `0`: request succeeded and all assertions passed
+- `1`: compilation/runtime/assertion failures
+- `2`: invalid CLI usage
+
+### Example
+
+```bash
+pipetest request examples/happy-path.pt login --verbose
 ```

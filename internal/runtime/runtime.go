@@ -28,6 +28,8 @@ type Options struct {
 	BaseOverride    *string
 	TimeoutOverride *time.Duration
 	Client          *http.Client
+	Verbose         bool
+	LogWriter       io.Writer
 }
 
 type Result struct {
@@ -89,6 +91,7 @@ func Execute(ctx context.Context, plan *compiler.Plan, opt Options) Result {
 	}
 
 	for _, flow := range plan.Flows {
+		verbosef(opt, "flow %q: start", flow.Name)
 		fr := FlowResult{Name: flow.Name}
 		flowVars := copyMap(globals)
 		for _, pre := range flow.Decl.Prelude {
@@ -101,6 +104,7 @@ func Execute(ctx context.Context, plan *compiler.Plan, opt Options) Result {
 		}
 		flowViews := map[string]flowBinding{}
 		for _, step := range flow.Steps {
+			verbosef(opt, "flow %q: request %q (binding=%q) start", flow.Name, step.Request, step.Binding)
 			pr, ok := requests[step.Request]
 			if !ok {
 				res.Diags = append(res.Diags, runtimeDiag("E_RUNTIME_UNKNOWN_REQUEST", "request not found in runtime plan", plan.EntryPath, flow.Span, step.Request, flow.Name, step.Request))
@@ -113,6 +117,7 @@ func Execute(ctx context.Context, plan *compiler.Plan, opt Options) Result {
 			}
 			flowViews[step.Binding] = flowBinding{Res: stepResult.res, Req: stepResult.reqSnapshot, Status: stepResult.status, Header: stepResult.headers}
 			fr.Steps = append(fr.Steps, StepResult{Request: step.Request, Binding: step.Binding, Status: stepResult.status})
+			verbosef(opt, "flow %q: request %q done (status=%d)", flow.Name, step.Binding, stepResult.status)
 		}
 		for _, as := range flow.Decl.Asserts {
 			v, err := evalExpr(as.Expr, requestContext{flowVars: flowVars, flowViews: flowViews})
@@ -130,6 +135,7 @@ func Execute(ctx context.Context, plan *compiler.Plan, opt Options) Result {
 			}
 		}
 		res.Flows = append(res.Flows, fr)
+		verbosef(opt, "flow %q: done", flow.Name)
 	}
 
 	return res
@@ -294,6 +300,13 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 		}
 	}
 	return &stepExecutionResult{status: httpRes.StatusCode, headers: headers, res: resJSON, reqSnapshot: copyMap(reqObj)}, nil
+}
+
+func verbosef(opt Options, format string, args ...any) {
+	if !opt.Verbose || opt.LogWriter == nil {
+		return
+	}
+	_, _ = fmt.Fprintf(opt.LogWriter, "[verbose] "+format+"\n", args...)
 }
 
 func resolveLines(req compiler.PlanRequest, plan *compiler.Plan) []ast.ReqLine {
@@ -590,6 +603,8 @@ func evalExpr(expr ast.Expr, rctx requestContext) (any, error) {
 		}
 		return obj, nil
 	case *ast.DollarExpr:
+		return rctx.reqObj, nil
+	case *ast.HashExpr:
 		return rctx.resJSON, nil
 	case *ast.IdentExpr:
 		switch e.Name {

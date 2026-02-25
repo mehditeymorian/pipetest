@@ -1,6 +1,6 @@
 req login:
-  GET /login
+	GET /login
 
 flow "single-step":
-  login
-  ? login.status == 200
+	login
+	? login.status == 200

@@ -232,6 +232,11 @@ func snapshotNode(node interface{}) interface{} {
 			Type: "DollarExpr",
 			Span: snapshotSpan(n.Span),
 		}
+	case *ast.HashExpr:
+		return nodeSnapshot{
+			Type: "HashExpr",
+			Span: snapshotSpan(n.Span),
+		}
 	case *ast.ArrayLit:
 		return nodeSnapshot{
 			Type: "ArrayLit",

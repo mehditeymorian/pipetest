@@ -8,14 +8,14 @@
         "Path": "/groups/:group_id/orders",
         "Span": {
           "Start": {
-            "Offset": 152,
+            "Offset": 148,
             "Line": 11,
-            "Column": 3
+            "Column": 2
           },
           "End": {
-            "Offset": 180,
+            "Offset": 176,
             "Line": 11,
-            "Column": 31
+            "Column": 30
           }
         }
       }
@@ -27,14 +27,14 @@
         "Path": "/auth/login",
         "Span": {
           "Start": {
-            "Offset": 66,
+            "Offset": 65,
             "Line": 6,
-            "Column": 3
+            "Column": 2
           },
           "End": {
-            "Offset": 82,
+            "Offset": 81,
             "Line": 6,
-            "Column": 19
+            "Column": 18
           }
         }
       }

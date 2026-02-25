@@ -1,2 +1,2 @@
 req bad:
-	POST /bad
+  POST /bad

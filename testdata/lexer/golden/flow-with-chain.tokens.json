@@ -64,77 +64,77 @@
       "column": 1
     },
     "end": {
-      "offset": 21,
+      "offset": 20,
       "line": 2,
-      "column": 3
+      "column": 2
     }
   },
   {
     "kind": "KW_LET",
     "lit": "let",
     "start": {
-      "offset": 21,
+      "offset": 20,
       "line": 2,
-      "column": 3
+      "column": 2
     },
     "end": {
-      "offset": 24,
+      "offset": 23,
       "line": 2,
-      "column": 6
+      "column": 5
     }
   },
   {
     "kind": "IDENT",
     "lit": "group_id",
     "start": {
-      "offset": 25,
+      "offset": 24,
       "line": 2,
-      "column": 7
+      "column": 6
     },
     "end": {
-      "offset": 33,
+      "offset": 32,
       "line": 2,
-      "column": 15
+      "column": 14
     }
   },
   {
     "kind": "ASSIGN",
     "lit": "=",
     "start": {
+      "offset": 33,
+      "line": 2,
+      "column": 15
+    },
+    "end": {
       "offset": 34,
       "line": 2,
       "column": 16
-    },
-    "end": {
-      "offset": 35,
-      "line": 2,
-      "column": 17
     }
   },
   {
     "kind": "STRING",
     "lit": "\"g\"",
     "start": {
-      "offset": 36,
+      "offset": 35,
       "line": 2,
-      "column": 18
+      "column": 17
     },
     "end": {
-      "offset": 39,
+      "offset": 38,
       "line": 2,
-      "column": 21
+      "column": 20
     }
   },
   {
     "kind": "NL",
     "lit": "",
     "start": {
-      "offset": 39,
+      "offset": 38,
       "line": 2,
-      "column": 21
+      "column": 20
     },
     "end": {
-      "offset": 40,
+      "offset": 39,
       "line": 3,
       "column": 1
     }
@@ -143,82 +143,82 @@
     "kind": "IDENT",
     "lit": "login",
     "start": {
-      "offset": 42,
+      "offset": 40,
       "line": 3,
-      "column": 3
+      "column": 2
     },
     "end": {
-      "offset": 47,
+      "offset": 45,
       "line": 3,
-      "column": 8
+      "column": 7
     }
   },
   {
     "kind": "ARROW",
     "lit": "-\u003e",
     "start": {
-      "offset": 48,
+      "offset": 46,
       "line": 3,
-      "column": 9
+      "column": 8
     },
     "end": {
-      "offset": 50,
+      "offset": 48,
       "line": 3,
-      "column": 11
+      "column": 10
     }
   },
   {
     "kind": "IDENT",
     "lit": "listOrders",
     "start": {
-      "offset": 51,
+      "offset": 49,
       "line": 3,
-      "column": 12
+      "column": 11
     },
     "end": {
-      "offset": 61,
+      "offset": 59,
       "line": 3,
-      "column": 22
+      "column": 21
     }
   },
   {
     "kind": "COLON",
     "lit": ":",
     "start": {
-      "offset": 62,
+      "offset": 60,
       "line": 3,
-      "column": 23
+      "column": 22
     },
     "end": {
-      "offset": 63,
+      "offset": 61,
       "line": 3,
-      "column": 24
+      "column": 23
     }
   },
   {
     "kind": "IDENT",
     "lit": "orders1",
     "start": {
-      "offset": 64,
+      "offset": 62,
       "line": 3,
-      "column": 25
+      "column": 24
     },
     "end": {
-      "offset": 71,
+      "offset": 69,
       "line": 3,
-      "column": 32
+      "column": 31
     }
   },
   {
     "kind": "NL",
     "lit": "",
     "start": {
-      "offset": 71,
+      "offset": 69,
       "line": 3,
-      "column": 32
+      "column": 31
     },
     "end": {
-      "offset": 72,
+      "offset": 70,
       "line": 4,
       "column": 1
     }
@@ -227,96 +227,96 @@
     "kind": "QUESTION",
     "lit": "?",
     "start": {
-      "offset": 74,
+      "offset": 71,
       "line": 4,
-      "column": 3
+      "column": 2
     },
     "end": {
-      "offset": 75,
+      "offset": 72,
       "line": 4,
-      "column": 4
+      "column": 3
     }
   },
   {
     "kind": "IDENT",
     "lit": "orders1",
     "start": {
-      "offset": 76,
+      "offset": 73,
       "line": 4,
-      "column": 5
+      "column": 4
     },
     "end": {
-      "offset": 83,
+      "offset": 80,
       "line": 4,
-      "column": 12
+      "column": 11
     }
   },
   {
     "kind": "DOT",
     "lit": ".",
     "start": {
-      "offset": 83,
+      "offset": 80,
       "line": 4,
-      "column": 12
+      "column": 11
     },
     "end": {
-      "offset": 84,
+      "offset": 81,
       "line": 4,
-      "column": 13
+      "column": 12
     }
   },
   {
     "kind": "IDENT",
     "lit": "status",
     "start": {
-      "offset": 84,
+      "offset": 81,
       "line": 4,
-      "column": 13
+      "column": 12
     },
     "end": {
-      "offset": 90,
+      "offset": 87,
       "line": 4,
-      "column": 19
+      "column": 18
     }
   },
   {
     "kind": "OP_EQ",
     "lit": "==",
     "start": {
-      "offset": 91,
+      "offset": 88,
       "line": 4,
-      "column": 20
+      "column": 19
     },
     "end": {
-      "offset": 93,
+      "offset": 90,
       "line": 4,
-      "column": 22
+      "column": 21
     }
   },
   {
     "kind": "NUMBER",
     "lit": "200",
     "start": {
-      "offset": 94,
+      "offset": 91,
       "line": 4,
-      "column": 23
+      "column": 22
     },
     "end": {
-      "offset": 97,
+      "offset": 94,
       "line": 4,
-      "column": 26
+      "column": 25
     }
   },
   {
     "kind": "NL",
     "lit": "",
     "start": {
-      "offset": 97,
+      "offset": 94,
       "line": 4,
-      "column": 26
+      "column": 25
     },
     "end": {
-      "offset": 98,
+      "offset": 95,
       "line": 5,
       "column": 1
     }
@@ -325,12 +325,12 @@
     "kind": "DEDENT",
     "lit": "",
     "start": {
-      "offset": 98,
+      "offset": 95,
       "line": 5,
       "column": 1
     },
     "end": {
-      "offset": 98,
+      "offset": 95,
       "line": 5,
       "column": 1
     }
@@ -339,12 +339,12 @@
     "kind": "EOF",
     "lit": "",
     "start": {
-      "offset": 98,
+      "offset": 95,
       "line": 5,
       "column": 1
     },
     "end": {
-      "offset": 98,
+      "offset": 95,
       "line": 5,
       "column": 1
     }
