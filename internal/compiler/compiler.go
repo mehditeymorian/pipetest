@@ -28,9 +28,12 @@ type Module struct {
 
 // Plan is the validated execution plan IR.
 type Plan struct {
-	EntryPath string        `json:"entry_path"`
-	Requests  []PlanRequest `json:"requests"`
-	Flows     []PlanFlow    `json:"flows"`
+	EntryPath string         `json:"entry_path"`
+	Requests  []PlanRequest  `json:"requests"`
+	Flows     []PlanFlow     `json:"flows"`
+	Base      *string        `json:"-"`
+	Timeout   *string        `json:"-"`
+	Globals   []*ast.LetStmt `json:"-"`
 }
 
 // PlanRequest is a semantically validated request.
@@ -38,15 +41,17 @@ type PlanRequest struct {
 	Name   string        `json:"name"`
 	Parent *string       `json:"parent,omitempty"`
 	HTTP   *ast.HttpLine `json:"http,omitempty"`
+	Decl   *ast.ReqDecl  `json:"-"`
 }
 
 // PlanFlow is a semantically validated flow.
 type PlanFlow struct {
-	Name  string     `json:"name"`
-	Steps []PlanStep `json:"steps"`
-	Lets  []string   `json:"lets"`
-	Check []ast.Expr `json:"-"`
-	Span  ast.Span   `json:"-"`
+	Name  string        `json:"name"`
+	Steps []PlanStep    `json:"steps"`
+	Lets  []string      `json:"lets"`
+	Check []ast.Expr    `json:"-"`
+	Span  ast.Span      `json:"-"`
+	Decl  *ast.FlowDecl `json:"-"`
 }
 
 // PlanStep is one request invocation in a flow.
@@ -285,8 +290,27 @@ func (c *compiler) passFlows() {
 
 func (c *compiler) buildPlan() {
 	plan := &Plan{EntryPath: c.entryPath}
+	for _, stmt := range c.modules[c.entryPath].Stmts {
+		switch s := stmt.(type) {
+		case *ast.SettingStmt:
+			switch v := s.Value.(type) {
+			case *ast.StringLit:
+				if s.Kind == ast.SettingBase {
+					value := v.Value
+					plan.Base = &value
+				}
+			case *ast.DurationLit:
+				if s.Kind == ast.SettingTimeout {
+					value := v.Raw
+					plan.Timeout = &value
+				}
+			}
+		case *ast.LetStmt:
+			plan.Globals = append(plan.Globals, s)
+		}
+	}
 	for name, req := range c.reqs {
-		pr := PlanRequest{Name: name, Parent: req.Decl.Parent}
+		pr := PlanRequest{Name: name, Parent: req.Decl.Parent, Decl: req.Decl}
 		for _, line := range req.Decl.Lines {
 			if http, ok := line.(*ast.HttpLine); ok {
 				pr.HTTP = http
@@ -301,7 +325,7 @@ func (c *compiler) buildPlan() {
 		if !ok {
 			continue
 		}
-		pf := PlanFlow{Name: flow.Name.Value, Span: flow.Span}
+		pf := PlanFlow{Name: flow.Name.Value, Span: flow.Span, Decl: flow}
 		for _, let := range flow.Prelude {
 			pf.Lets = append(pf.Lets, let.Name)
 		}
@@ -311,6 +335,9 @@ func (c *compiler) buildPlan() {
 				binding = *step.Alias
 			}
 			pf.Steps = append(pf.Steps, PlanStep{Request: step.ReqName, Binding: binding})
+		}
+		for _, as := range flow.Asserts {
+			pf.Check = append(pf.Check, as.Expr)
 		}
 		plan.Flows = append(plan.Flows, pf)
 	}
