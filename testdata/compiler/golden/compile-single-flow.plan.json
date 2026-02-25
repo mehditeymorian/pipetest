@@ -1,0 +1,59 @@
+{
+  "entry_path": "../../testdata/compiler/valid/compile-single-flow.pt",
+  "requests": [
+    {
+      "name": "listOrders",
+      "http": {
+        "Method": 0,
+        "Path": "/groups/:group_id/orders",
+        "Span": {
+          "Start": {
+            "Offset": 152,
+            "Line": 11,
+            "Column": 3
+          },
+          "End": {
+            "Offset": 180,
+            "Line": 11,
+            "Column": 31
+          }
+        }
+      }
+    },
+    {
+      "name": "login",
+      "http": {
+        "Method": 1,
+        "Path": "/auth/login",
+        "Span": {
+          "Start": {
+            "Offset": 66,
+            "Line": 6,
+            "Column": 3
+          },
+          "End": {
+            "Offset": 82,
+            "Line": 6,
+            "Column": 19
+          }
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "name": "happy",
+      "steps": [
+        {
+          "request": "login",
+          "binding": "login"
+        },
+        {
+          "request": "listOrders",
+          "binding": "orders"
+        }
+      ],
+      "lets": null
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+import "import-cycle-a.pt"
+
+req b:
+  GET /b

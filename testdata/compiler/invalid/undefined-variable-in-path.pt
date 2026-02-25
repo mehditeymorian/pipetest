@@ -1,0 +1,8 @@
+req listOrders:
+  GET /groups/:group_id/orders
+
+req ping:
+  GET /ping
+
+flow "x":
+  ping -> listOrders

@@ -1,0 +1,17 @@
+[
+  {
+    "Severity": "error",
+    "Code": "E_SEM_DUPLICATE_REQ_NAME",
+    "Message": "duplicate request name",
+    "File": "../../testdata/compiler/invalid/duplicate-request-name.pt",
+    "Line": 4,
+    "Column": 1,
+    "Hint": "rename one of the request declarations",
+    "Related": {
+      "File": "../../testdata/compiler/invalid/duplicate-request-name.pt",
+      "Line": 1,
+      "Column": 1,
+      "Message": "first declaration"
+    }
+  }
+]

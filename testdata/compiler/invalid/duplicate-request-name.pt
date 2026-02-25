@@ -1,0 +1,8 @@
+req login:
+  POST /auth/login
+
+req login:
+  GET /auth/me
+
+flow "x":
+  login -> login : second

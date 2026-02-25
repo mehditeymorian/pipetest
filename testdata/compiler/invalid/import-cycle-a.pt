@@ -1,0 +1,7 @@
+import "import-cycle-b.pt"
+
+req a:
+  GET /a
+
+flow "x":
+  a -> a : a2

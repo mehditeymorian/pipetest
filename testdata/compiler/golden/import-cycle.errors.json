@@ -1,0 +1,12 @@
+[
+  {
+    "Severity": "error",
+    "Code": "E_IMPORT_CYCLE",
+    "Message": "import cycle detected",
+    "File": "../../testdata/compiler/invalid/import-cycle-a.pt",
+    "Line": 0,
+    "Column": 0,
+    "Hint": "remove circular imports",
+    "Related": null
+  }
+]
