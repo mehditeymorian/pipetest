@@ -222,6 +222,38 @@ flow "print-int":
 	}
 }
 
+func TestExecuteBuiltinUtilityFunctions(t *testing.T) {
+	t.Setenv("PIPETEST_EMAIL", "qa+dev@example.com")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"user":{"name":"alice"},"items":[{"id":7}]}`))
+	}))
+	defer srv.Close()
+
+	src := `
+base "` + srv.URL + `"
+
+req builtins:
+	GET /get
+	? regex("^qa.+dev", env("PIPETEST_EMAIL"))
+	? jsonpath(#, "$.user.name") == "alice"
+	? jsonpath(#, "$.items[0].id") == 7
+	? urlencode(env("PIPETEST_EMAIL")) == "qa%2Bdev%40example.com"
+	? len(now()) > 10
+	? len(uuid()) == 32
+
+flow "builtins":
+	builtins
+	? builtins.status == 200
+`
+
+	plan := mustCompilePlan(t, "runtime-builtins.pt", src)
+	result := Execute(context.Background(), plan, Options{})
+	if len(result.Diags) != 0 {
+		t.Fatalf("expected no diagnostics, got %+v", result.Diags)
+	}
+}
+
 func captureStdout(t *testing.T, fn func()) string {
 	t.Helper()
 	old := os.Stdout

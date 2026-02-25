@@ -961,6 +961,30 @@ func evalExpr(expr ast.Expr, rctx requestContext) (any, error) {
 			default:
 				return nil, fmt.Errorf("len unsupported for type")
 			}
+		case "regex":
+			if len(args) != 2 {
+				return nil, fmt.Errorf("regex expects 2 args")
+			}
+			re, err := regexp.Compile(fmt.Sprint(args[0]))
+			if err != nil {
+				return nil, fmt.Errorf("invalid regex: %w", err)
+			}
+			return re.MatchString(fmt.Sprint(args[1])), nil
+		case "jsonpath":
+			if len(args) != 2 {
+				return nil, fmt.Errorf("jsonpath expects 2 args")
+			}
+			return jsonPathLookup(args[0], fmt.Sprint(args[1]))
+		case "now":
+			if len(args) != 0 {
+				return nil, fmt.Errorf("now expects no args")
+			}
+			return time.Now().UTC().Format(time.RFC3339Nano), nil
+		case "urlencode":
+			if len(args) != 1 {
+				return nil, fmt.Errorf("urlencode expects 1 arg")
+			}
+			return url.QueryEscape(fmt.Sprint(args[0])), nil
 		default:
 			return nil, fmt.Errorf("unknown function %s", callee.Name)
 		}
@@ -1050,6 +1074,54 @@ func runtimeDiag(code, message, file string, span ast.Span, hint, flow, req stri
 		d.Request = ptr(req)
 	}
 	return d
+}
+
+func jsonPathLookup(root any, path string) (any, error) {
+	if !strings.HasPrefix(path, "$") {
+		return nil, fmt.Errorf("jsonpath must start with $")
+	}
+	cur := root
+	i := 1
+	for i < len(path) {
+		switch path[i] {
+		case '.':
+			i++
+			start := i
+			for i < len(path) && ((path[i] >= 'a' && path[i] <= 'z') || (path[i] >= 'A' && path[i] <= 'Z') || (path[i] >= '0' && path[i] <= '9') || path[i] == '_') {
+				i++
+			}
+			if start == i {
+				return nil, fmt.Errorf("invalid jsonpath segment")
+			}
+			obj, ok := cur.(map[string]any)
+			if !ok {
+				return nil, nil
+			}
+			cur = obj[path[start:i]]
+		case '[':
+			i++
+			start := i
+			for i < len(path) && path[i] >= '0' && path[i] <= '9' {
+				i++
+			}
+			if start == i || i >= len(path) || path[i] != ']' {
+				return nil, fmt.Errorf("invalid jsonpath index")
+			}
+			idx, err := strconv.Atoi(path[start:i])
+			if err != nil {
+				return nil, fmt.Errorf("invalid jsonpath index: %w", err)
+			}
+			i++
+			arr, ok := cur.([]any)
+			if !ok || idx < 0 || idx >= len(arr) {
+				return nil, nil
+			}
+			cur = arr[idx]
+		default:
+			return nil, fmt.Errorf("invalid jsonpath syntax")
+		}
+	}
+	return cur, nil
 }
 
 func randomID() string {

@@ -253,6 +253,16 @@ Context objects:
 - in request scope: `status`, `header[...]`, `$`, `#`
 - in flow scope: `<step>.status`, `<step>.res`, `<step>.req`, `<step>.header[...]`
 
+Utility functions (callable in expressions/hooks):
+
+- `env("NAME")`: reads an environment variable
+- `uuid()`: generates a random 32-char hex identifier
+- `len(x)`: length of arrays/objects/strings
+- `regex(pattern, value)`: returns whether `value` matches `pattern`
+- `jsonpath(value, "$.path[0]")`: reads JSON fields/indices from a value
+- `now()`: current UTC timestamp (`RFC3339Nano`)
+- `urlencode(value)`: URL-encodes a value for query/path usage
+
 ## Path params in URLs
 
 Named path segments like `:group_id` are substituted from variables at execution time:

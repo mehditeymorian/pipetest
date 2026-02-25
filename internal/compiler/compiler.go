@@ -13,7 +13,7 @@ import (
 var pathParamRE = regexp.MustCompile(`:([A-Za-z_][A-Za-z0-9_]*)`)
 
 var builtins = map[string]struct{}{
-	"env": {}, "uuid": {}, "len": {}, "jsonpath": {}, "regex": {},
+	"env": {}, "uuid": {}, "len": {}, "jsonpath": {}, "regex": {}, "now": {}, "urlencode": {},
 }
 
 var reservedNames = map[string]struct{}{
