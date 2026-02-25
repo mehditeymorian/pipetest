@@ -585,13 +585,14 @@ func (l *Lexer) peekPathPrefix() bool {
 }
 
 func (l *Lexer) scanPathIfPresent() (Token, bool) {
-	if l.peek() == '/' {
+	r := l.peek()
+	if r == 0 || r == '\n' || r == '\r' || unicode.IsSpace(r) || r == '#' {
+		return Token{}, false
+	}
+	if r == '/' || l.peekPathPrefix() {
 		return l.scanPath(), true
 	}
-	if l.peekPathPrefix() {
-		return l.scanPath(), true
-	}
-	return Token{}, false
+	return l.scanPath(), true
 }
 
 func (l *Lexer) scanPath() Token {

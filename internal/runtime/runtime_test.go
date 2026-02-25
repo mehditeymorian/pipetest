@@ -101,6 +101,37 @@ flow "single-step":
 	}
 }
 
+func TestExecuteSingleStepFlowWithRelativePathWithoutLeadingSlash(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/health" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	src := `
+base "` + srv.URL + `"
+
+req ping:
+	GET health
+	? status == 200
+
+flow "single-step":
+	ping
+	? ping.status == 200
+`
+	plan := mustCompilePlan(t, "runtime-single-step-relative.pt", src)
+	result := Execute(context.Background(), plan, Options{})
+	if len(result.Diags) != 0 {
+		t.Fatalf("expected no diagnostics, got %+v", result.Diags)
+	}
+	if len(result.Flows) != 1 || len(result.Flows[0].Steps) != 1 {
+		t.Fatalf("unexpected flow result: %+v", result.Flows)
+	}
+}
+
 func TestExecuteFlowWithNilDecl(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -145,6 +176,28 @@ flow "broken":
 	}
 	if result.Diags[0].Code != "E_RUNTIME_TRANSPORT" {
 		t.Fatalf("expected E_RUNTIME_TRANSPORT, got %s", result.Diags[0].Code)
+	}
+}
+
+func TestCombineURL(t *testing.T) {
+	tests := []struct {
+		name string
+		base string
+		path string
+		want string
+	}{
+		{name: "absolute-url", base: "https://api.example.com", path: "https://override.example.com/health", want: "https://override.example.com/health"},
+		{name: "relative-path-with-leading-slash", base: "https://api.example.com", path: "/health", want: "https://api.example.com/health"},
+		{name: "relative-path-without-leading-slash", base: "https://api.example.com", path: "health", want: "https://api.example.com/health"},
+		{name: "no-base", base: "", path: "health", want: "health"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := combineURL(tt.base, tt.path); got != tt.want {
+				t.Fatalf("combineURL(%q, %q) = %q; want %q", tt.base, tt.path, got, tt.want)
+			}
+		})
 	}
 }
 

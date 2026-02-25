@@ -120,7 +120,8 @@ When scanning a line, prefer longest/most specific tokens first:
 7. Strings (`"..."` or `` `...` ``)
 8. `PATH` token:
 
-   * begins with `/` or `http://` or `https://`
+   * captured immediately after an HTTP method
+   * can be absolute (`http://...`, `https://...`) or relative (`/users`, `users`)
    * consumes until whitespace or `#` (comment start), **but allow `:` inside PATH**
 9. Identifiers / keywords
 10. Punctuation: `{ } [ ] ( ) , .`
@@ -131,6 +132,7 @@ Tokenize the full path as a single `PATH` token, e.g.:
 
 * `/groups/:group_id/orders/:order_id`
 * `/orders`
+* `orders/:id`
 * `https://api.x.com/v1/orders/:id`
 
 Semantic layer will later extract `:param` occurrences.

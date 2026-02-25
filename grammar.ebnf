@@ -54,7 +54,8 @@ HttpMethod      ::= "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTI
 
 (*
   PathOrUrl is tokenized as PATH (see lexer notes).
-  It supports path params like /groups/:group_id/orders
+  It supports absolute URLs and relative targets (with or without leading slash),
+  including path params like groups/:group_id/orders
 *)
 PathOrUrl       ::= PATH ;
 
@@ -227,7 +228,7 @@ ObjKey          ::= Ident | StringLit ;
   NumberLit    : [0-9]+ ( "." [0-9]+ )?
   DurationLit  : [0-9]+ ( "." [0-9]+ )? ( "ms" | "s" | "m" | "h" | "d" )
   StringLit    : Double-quoted with escapes OR backtick raw string
-  PATH         : ( "/" | "http://" | "https://" ) [^ \t\r\n#]+
+  PATH         : [^ \t\r\n#]+ (captured immediately after an HTTP method)
 
   WS           : spaces/tabs within a line (ignored by parser except where shown)
   NL           : logical newline (after stripping comments + line continuations if any)

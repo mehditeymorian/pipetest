@@ -178,6 +178,21 @@ req listUsers:
   ? status == 200
 ```
 
+HTTP lines accept full URLs and relative targets:
+
+```pt
+base "https://api.example.com"
+
+req viaBase:
+  GET users
+
+req absolute:
+  GET https://other.example.com/health
+```
+
+- full `http://...` / `https://...` URLs are used as-is
+- non-absolute targets are combined with `base`
+
 With inheritance:
 
 ```pt

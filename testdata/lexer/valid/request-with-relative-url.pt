@@ -1,0 +1,3 @@
+req login:
+	GET users/:id
+	query page = 1

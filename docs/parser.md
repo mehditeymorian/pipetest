@@ -49,7 +49,8 @@ You don’t need a separate “line pre-pass” file—just implement these beha
   * `}` decrements `hookDepth` when in hook mode; otherwise it’s a normal token (used in object literals).
 * **`PATH` token**:
 
-  * If the next non-space starts with `/` or `http://` or `https://`, lex a single `PATH` token consuming until whitespace or `#`.
+  * Immediately after an HTTP method, lex the next non-space segment as one `PATH` token until whitespace or `#`.
+  * This supports absolute URLs (`http://...`, `https://...`) and relative targets (`/users`, `users`).
   * This preserves `:group_id` inside paths without producing a `:` token.
 
 ---
@@ -528,4 +529,3 @@ Your earlier semantic checklist maps directly to these passes.
 * Start by writing golden tests that parse scripts into AST and snapshot them.
 * Then add semantic tests: missing req in flow, alias collision, missing path var, flow asserts before chain, etc.
 * Add fuzz tests for the lexer (especially indentation + hooks + strings).
-

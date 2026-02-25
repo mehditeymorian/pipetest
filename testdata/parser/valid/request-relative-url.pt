@@ -1,0 +1,7 @@
+base "https://api.example.com"
+
+req login:
+	GET users/:id
+
+flow "smoke":
+	login
