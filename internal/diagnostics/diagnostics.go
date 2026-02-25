@@ -23,6 +23,8 @@ type Diagnostic struct {
 	Column   int
 	Hint     string
 	Related  *Related
+	Flow     *string `json:",omitempty"`
+	Request  *string `json:",omitempty"`
 }
 
 // SortAndDedupe enforces deterministic output ordering and duplicate removal.
@@ -85,5 +87,12 @@ func relatedSortKey(r *Related) relatedKey {
 
 func dedupeKey(d Diagnostic) string {
 	rk := relatedSortKey(d.Related)
-	return d.Code + "|" + d.File + "|" + strconv.Itoa(d.Line) + "|" + strconv.Itoa(d.Column) + "|" + d.Message + "|" + rk.file + "|" + strconv.Itoa(rk.line) + "|" + strconv.Itoa(rk.column)
+	return d.Code + "|" + d.File + "|" + strconv.Itoa(d.Line) + "|" + strconv.Itoa(d.Column) + "|" + d.Message + "|" + rk.file + "|" + strconv.Itoa(rk.line) + "|" + strconv.Itoa(rk.column) + "|" + ptrStr(d.Flow) + "|" + ptrStr(d.Request)
+}
+
+func ptrStr(v *string) string {
+	if v == nil {
+		return ""
+	}
+	return *v
 }

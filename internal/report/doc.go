@@ -1,2 +1,2 @@
-// Package report provides scaffolding for future implementation.
+// Package report builds deterministic run reports and writes JSON/JUnit artifacts.
 package report

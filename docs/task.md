@@ -17,7 +17,7 @@ Tasks (MVP):
 | mvp-02-parser-ast | done | 2026-02-24 |
 | mvp-03-compiler | done | 2026-02-24 |
 | mvp-04-runtime | done | 2026-02-25 |
-| mvp-05-cli-reporting | not-started | 2026-02-24 |
+| mvp-05-cli-reporting | done | 2026-02-25 |
 
 History:
 - 2026-02-24: Created MVP task definitions under docs/tasks/ and initialized task state.
@@ -27,3 +27,5 @@ History:
 - 2026-02-24: Completed mvp-03-compiler.
 
 - 2026-02-25: Completed mvp-04-runtime.
+
+- 2026-02-25: Completed mvp-05-cli-reporting.

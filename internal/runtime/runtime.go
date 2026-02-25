@@ -143,9 +143,13 @@ type stepExecutionResult struct {
 
 func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanRequest, step compiler.PlanStep, flowName string, flowVars map[string]any, flowViews map[string]flowBinding, client *http.Client, opt Options) (*stepExecutionResult, *diagnostics.Diagnostic) {
 	lines := resolveLines(req, plan)
+	requestID := step.Request
+	if step.Binding != step.Request {
+		requestID = step.Request + ":" + step.Binding
+	}
 	httpLine := req.HTTP
 	if httpLine == nil {
-		return nil, ptr(runtimeDiag("E_RUNTIME_REQUEST_SHAPE", "missing http line at runtime", plan.EntryPath, req.Decl.Span, "compiler should ensure requests contain one HTTP line", flowName, req.Name))
+		return nil, ptr(runtimeDiag("E_RUNTIME_REQUEST_SHAPE", "missing http line at runtime", plan.EntryPath, req.Decl.Span, "compiler should ensure requests contain one HTTP line", flowName, requestID))
 	}
 	base := ""
 	if plan.Base != nil {
@@ -156,7 +160,7 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 	}
 	path, err := renderPath(httpLine.Path, flowVars)
 	if err != nil {
-		return nil, ptr(runtimeDiag("E_RUNTIME_MISSING_PATH_PARAM", err.Error(), plan.EntryPath, httpLine.Span, "define the missing variable in global/flow/request scope", flowName, req.Name))
+		return nil, ptr(runtimeDiag("E_RUNTIME_MISSING_PATH_PARAM", err.Error(), plan.EntryPath, httpLine.Span, "define the missing variable in global/flow/request scope", flowName, requestID))
 	}
 	urlStr := combineURL(base, path)
 	reqObj := map[string]any{
@@ -174,7 +178,7 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 			continue
 		}
 		if err := execHook(h, rctx); err != nil {
-			return nil, ptr(runtimeDiag("E_RUNTIME_HOOK", "pre hook execution failed", plan.EntryPath, h.Span, err.Error(), flowName, req.Name))
+			return nil, ptr(runtimeDiag("E_RUNTIME_HOOK", "pre hook execution failed", plan.EntryPath, h.Span, err.Error(), flowName, requestID))
 		}
 	}
 	for _, line := range lines {
@@ -182,19 +186,19 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 		case *ast.HeaderDirective:
 			v, err := evalExpr(l.Value, rctx)
 			if err != nil {
-				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate header directive", plan.EntryPath, l.Span, err.Error(), flowName, req.Name))
+				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate header directive", plan.EntryPath, l.Span, err.Error(), flowName, requestID))
 			}
 			reqObj["header"].(map[string]any)[l.Key.Name] = fmt.Sprint(v)
 		case *ast.QueryDirective:
 			v, err := evalExpr(l.Value, rctx)
 			if err != nil {
-				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate query directive", plan.EntryPath, l.Span, err.Error(), flowName, req.Name))
+				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate query directive", plan.EntryPath, l.Span, err.Error(), flowName, requestID))
 			}
 			reqObj["query"].(map[string]any)[l.Key.Name] = fmt.Sprint(v)
 		case *ast.AuthDirective:
 			v, err := evalExpr(l.Value, rctx)
 			if err != nil {
-				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate auth directive", plan.EntryPath, l.Span, err.Error(), flowName, req.Name))
+				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate auth directive", plan.EntryPath, l.Span, err.Error(), flowName, requestID))
 			}
 			if l.Scheme == ast.AuthBearer {
 				reqObj["header"].(map[string]any)["Authorization"] = "Bearer " + fmt.Sprint(v)
@@ -202,7 +206,7 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 		case *ast.JsonDirective:
 			v, err := evalExpr(l.Value, rctx)
 			if err != nil {
-				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate json directive", plan.EntryPath, l.Span, err.Error(), flowName, req.Name))
+				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate json directive", plan.EntryPath, l.Span, err.Error(), flowName, requestID))
 			}
 			reqObj["json"] = v
 		}
@@ -213,31 +217,31 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 	if reqObj["json"] != nil {
 		raw, err := json.Marshal(reqObj["json"])
 		if err != nil {
-			return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to serialize json body", plan.EntryPath, req.Decl.Span, err.Error(), flowName, req.Name))
+			return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to serialize json body", plan.EntryPath, req.Decl.Span, err.Error(), flowName, requestID))
 		}
 		body = bytes.NewReader(raw)
 		reqObj["header"].(map[string]any)["Content-Type"] = "application/json"
 	}
 	httpReq, err := http.NewRequestWithContext(ctx, reqObj["method"].(string), reqObj["url"].(string), body)
 	if err != nil {
-		return nil, ptr(runtimeDiag("E_RUNTIME_TRANSPORT", "failed to build request", plan.EntryPath, req.Decl.Span, err.Error(), flowName, req.Name))
+		return nil, ptr(runtimeDiag("E_RUNTIME_TRANSPORT", "failed to build request", plan.EntryPath, req.Decl.Span, err.Error(), flowName, requestID))
 	}
 	for k, v := range reqObj["header"].(map[string]any) {
 		httpReq.Header.Set(k, fmt.Sprint(v))
 	}
 	httpRes, err := client.Do(httpReq)
 	if err != nil {
-		return nil, ptr(runtimeDiag("E_RUNTIME_TRANSPORT", "http request failed", plan.EntryPath, req.Decl.Span, err.Error(), flowName, req.Name))
+		return nil, ptr(runtimeDiag("E_RUNTIME_TRANSPORT", "http request failed", plan.EntryPath, req.Decl.Span, err.Error(), flowName, requestID))
 	}
 	defer func() { _ = httpRes.Body.Close() }()
 	respRaw, err := io.ReadAll(httpRes.Body)
 	if err != nil {
-		return nil, ptr(runtimeDiag("E_RUNTIME_TRANSPORT", "failed to read response", plan.EntryPath, req.Decl.Span, err.Error(), flowName, req.Name))
+		return nil, ptr(runtimeDiag("E_RUNTIME_TRANSPORT", "failed to read response", plan.EntryPath, req.Decl.Span, err.Error(), flowName, requestID))
 	}
 	var resJSON any
 	if len(bytes.TrimSpace(respRaw)) > 0 {
 		if err := json.Unmarshal(respRaw, &resJSON); err != nil {
-			return nil, ptr(runtimeDiag("E_RUNTIME_TRANSPORT", "response is not valid json", plan.EntryPath, req.Decl.Span, err.Error(), flowName, req.Name))
+			return nil, ptr(runtimeDiag("E_RUNTIME_TRANSPORT", "response is not valid json", plan.EntryPath, req.Decl.Span, err.Error(), flowName, requestID))
 		}
 	}
 	headers := map[string]any{}
@@ -262,7 +266,7 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 			continue
 		}
 		if err := execHook(h, rctx); err != nil {
-			return nil, ptr(runtimeDiag("E_RUNTIME_HOOK", "post hook execution failed", plan.EntryPath, h.Span, err.Error(), flowName, req.Name))
+			return nil, ptr(runtimeDiag("E_RUNTIME_HOOK", "post hook execution failed", plan.EntryPath, h.Span, err.Error(), flowName, requestID))
 		}
 	}
 	for _, line := range lines {
@@ -270,7 +274,7 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 		case *ast.AssertStmt:
 			v, err := evalExpr(l.Expr, rctx)
 			if err != nil {
-				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate request assertion", plan.EntryPath, l.Span, err.Error(), flowName, req.Name))
+				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate request assertion", plan.EntryPath, l.Span, err.Error(), flowName, requestID))
 			}
 			ok, cast := asBool(v)
 			if cast != nil || !ok {
@@ -278,12 +282,12 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 				if cast != nil {
 					hint = cast.Error()
 				}
-				return nil, ptr(runtimeDiag("E_ASSERT_EXPECTED_TRUE", "request assertion failed", plan.EntryPath, l.Span, hint, flowName, req.Name))
+				return nil, ptr(runtimeDiag("E_ASSERT_EXPECTED_TRUE", "request assertion failed", plan.EntryPath, l.Span, hint, flowName, requestID))
 			}
 		case *ast.LetStmt:
 			v, err := evalExpr(l.Value, rctx)
 			if err != nil {
-				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate request let", plan.EntryPath, l.Span, err.Error(), flowName, req.Name))
+				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate request let", plan.EntryPath, l.Span, err.Error(), flowName, requestID))
 			}
 			flowVars[l.Name] = v
 		}
@@ -774,6 +778,12 @@ func httpMethodString(m ast.HttpMethod) string {
 
 func runtimeDiag(code, message, file string, span ast.Span, hint, flow, req string) diagnostics.Diagnostic {
 	d := diagnostics.Diagnostic{Severity: "error", Code: code, Message: message, File: file, Line: span.Start.Line, Column: span.Start.Column, Hint: hint}
+	if flow != "" {
+		d.Flow = ptr(flow)
+	}
+	if req != "" {
+		d.Request = ptr(req)
+	}
 	return d
 }
 

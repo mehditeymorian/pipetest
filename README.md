@@ -60,3 +60,24 @@ Recommended execution loop:
 3. Compiler semantic passes (imports, symbols, inheritance, flow checks, variable checks)
 4. Executor (HTTP runtime, hooks, assertions, variable propagation)
 5. Reporters (JSON + JUnit XML)
+
+
+## CLI usage
+
+Run static checks:
+
+```bash
+pipetest eval path/to/program.pt
+```
+
+Run flows and generate reports:
+
+```bash
+pipetest run path/to/program.pt --report-dir ./pipetest-report
+```
+
+`pipetest run` writes these artifacts in the report directory:
+
+- `pipetest-junit.xml`
+- `pipetest-report.xml`
+- `pipetest-report.json`
