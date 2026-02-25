@@ -25,11 +25,12 @@ import (
 var pathParamRuntimeRE = regexp.MustCompile(`:([A-Za-z_][A-Za-z0-9_]*)`)
 
 type Options struct {
-	BaseOverride    *string
-	TimeoutOverride *time.Duration
-	Client          *http.Client
-	Verbose         bool
-	LogWriter       io.Writer
+	BaseOverride              *string
+	TimeoutOverride           *time.Duration
+	Client                    *http.Client
+	Verbose                   bool
+	LogWriter                 io.Writer
+	SuppressPassingAssertions bool
 }
 
 type Result struct {
@@ -69,6 +70,7 @@ func Execute(ctx context.Context, plan *compiler.Plan, opt Options) Result {
 	if plan == nil {
 		return res
 	}
+	assertionLog := newAssertionLogger(opt)
 	client := opt.Client
 	if client == nil {
 		client = &http.Client{}
@@ -116,7 +118,7 @@ func Execute(ctx context.Context, plan *compiler.Plan, opt Options) Result {
 				res.Diags = append(res.Diags, runtimeDiag("E_RUNTIME_UNKNOWN_REQUEST", "request not found in runtime plan", plan.EntryPath, flow.Span, step.Request, flow.Name, step.Request))
 				continue
 			}
-			stepResult, diag := executeRequest(ctx, plan, pr, step, flow.Name, flowVars, flowViews, client, opt)
+			stepResult, diag := executeRequest(ctx, plan, pr, step, flow.Name, flowVars, flowViews, client, opt, assertionLog)
 			if diag != nil {
 				res.Diags = append(res.Diags, *diag)
 				continue
@@ -128,10 +130,12 @@ func Execute(ctx context.Context, plan *compiler.Plan, opt Options) Result {
 		for _, as := range asserts {
 			v, err := evalExpr(as.Expr, requestContext{flowVars: flowVars, flowViews: flowViews})
 			if err != nil {
+				assertionLog.log(flow.Name, "", as.Expr, false)
 				res.Diags = append(res.Diags, runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate flow assertion", plan.EntryPath, as.Span, err.Error(), flow.Name, ""))
 				continue
 			}
 			ok, cast := asBool(v)
+			assertionLog.log(flow.Name, "", as.Expr, cast == nil && ok)
 			if cast != nil || !ok {
 				hint := "assertion must evaluate to true"
 				if cast != nil {
@@ -154,12 +158,9 @@ type stepExecutionResult struct {
 	reqSnapshot map[string]any
 }
 
-func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanRequest, step compiler.PlanStep, flowName string, flowVars map[string]any, flowViews map[string]flowBinding, client *http.Client, opt Options) (*stepExecutionResult, *diagnostics.Diagnostic) {
+func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanRequest, step compiler.PlanStep, flowName string, flowVars map[string]any, flowViews map[string]flowBinding, client *http.Client, opt Options, assertionLog *assertionLogger) (*stepExecutionResult, *diagnostics.Diagnostic) {
 	lines := resolveLines(req, plan)
-	requestID := step.Request
-	if step.Binding != step.Request {
-		requestID = step.Request + ":" + step.Binding
-	}
+	requestID := stepDisplayName(step)
 	httpLine := req.HTTP
 	if httpLine == nil {
 		return nil, ptr(runtimeDiag("E_RUNTIME_REQUEST_SHAPE", "missing http line at runtime", plan.EntryPath, req.Decl.Span, "compiler should ensure requests contain one HTTP line", flowName, requestID))
@@ -287,9 +288,11 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 		case *ast.AssertStmt:
 			v, err := evalExpr(l.Expr, rctx)
 			if err != nil {
+				assertionLog.log(flowName, requestID, l.Expr, false)
 				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate request assertion", plan.EntryPath, l.Span, err.Error(), flowName, requestID))
 			}
 			ok, cast := asBool(v)
+			assertionLog.log(flowName, requestID, l.Expr, cast == nil && ok)
 			if cast != nil || !ok {
 				hint := "assertion must evaluate to true"
 				if cast != nil {
@@ -313,6 +316,150 @@ func verbosef(opt Options, format string, args ...any) {
 		return
 	}
 	_, _ = fmt.Fprintf(opt.LogWriter, "[verbose] "+format+"\n", args...)
+}
+
+type assertionLogger struct {
+	writer               io.Writer
+	suppressPassing      bool
+	currentFlowName      string
+	currentRequestTarget string
+}
+
+func newAssertionLogger(opt Options) *assertionLogger {
+	if opt.LogWriter == nil {
+		return nil
+	}
+	return &assertionLogger{
+		writer:          opt.LogWriter,
+		suppressPassing: opt.SuppressPassingAssertions,
+	}
+}
+
+func (l *assertionLogger) log(flowName, requestTarget string, expr ast.Expr, ok bool) {
+	if l == nil {
+		return
+	}
+	if ok && l.suppressPassing {
+		return
+	}
+	status := "❌"
+	if ok {
+		status = "✅"
+	}
+	if flowName != "" && flowName != l.currentFlowName {
+		_, _ = fmt.Fprintf(l.writer, "- flow %s\n", flowName)
+		l.currentFlowName = flowName
+		l.currentRequestTarget = ""
+	}
+	if requestTarget != "" {
+		if requestTarget != l.currentRequestTarget {
+			_, _ = fmt.Fprintf(l.writer, "  - %s\n", requestTarget)
+			l.currentRequestTarget = requestTarget
+		}
+		_, _ = fmt.Fprintf(l.writer, "    - assertion %s %s\n", formatExpr(expr), status)
+		return
+	}
+	l.currentRequestTarget = ""
+	_, _ = fmt.Fprintf(l.writer, "  - assertion %s %s\n", formatExpr(expr), status)
+}
+
+func stepDisplayName(step compiler.PlanStep) string {
+	if step.Binding == "" || step.Binding == step.Request {
+		return step.Request
+	}
+	return step.Request + ":" + step.Binding
+}
+
+func formatExpr(expr ast.Expr) string {
+	switch e := expr.(type) {
+	case *ast.StringLit:
+		return strconv.Quote(e.Value)
+	case *ast.NumberLit:
+		return e.Raw
+	case *ast.BoolLit:
+		if e.Value {
+			return "true"
+		}
+		return "false"
+	case *ast.NullLit:
+		return "null"
+	case *ast.ArrayLit:
+		parts := make([]string, 0, len(e.Elements))
+		for _, el := range e.Elements {
+			parts = append(parts, formatExpr(el))
+		}
+		return "[" + strings.Join(parts, ", ") + "]"
+	case *ast.ObjectLit:
+		parts := make([]string, 0, len(e.Pairs))
+		for _, pair := range e.Pairs {
+			parts = append(parts, pair.Key.Name+": "+formatExpr(pair.Value))
+		}
+		return "{" + strings.Join(parts, ", ") + "}"
+	case *ast.DollarExpr:
+		return "$"
+	case *ast.HashExpr:
+		return "#"
+	case *ast.IdentExpr:
+		return e.Name
+	case *ast.ParenExpr:
+		return "(" + formatExpr(e.X) + ")"
+	case *ast.UnaryExpr:
+		return unaryOpString(e.Op) + formatExpr(e.X)
+	case *ast.BinaryExpr:
+		return formatExpr(e.Left) + " " + binaryOpString(e.Op) + " " + formatExpr(e.Right)
+	case *ast.FieldExpr:
+		return formatExpr(e.X) + "." + e.Name
+	case *ast.IndexExpr:
+		return formatExpr(e.X) + "[" + formatExpr(e.Index) + "]"
+	case *ast.CallExpr:
+		parts := make([]string, 0, len(e.Args))
+		for _, arg := range e.Args {
+			parts = append(parts, formatExpr(arg))
+		}
+		return formatExpr(e.Callee) + "(" + strings.Join(parts, ", ") + ")"
+	default:
+		return "<expr>"
+	}
+}
+
+func unaryOpString(op ast.UnaryOp) string {
+	switch op {
+	case ast.UnaryNot:
+		return "!"
+	case ast.UnaryMinus:
+		return "-"
+	case ast.UnaryPlus:
+		return "+"
+	default:
+		return ""
+	}
+}
+
+func binaryOpString(op ast.BinaryOp) string {
+	switch op {
+	case ast.BinaryEq:
+		return "=="
+	case ast.BinaryNe:
+		return "!="
+	case ast.BinaryGt:
+		return ">"
+	case ast.BinaryGte:
+		return ">="
+	case ast.BinaryLt:
+		return "<"
+	case ast.BinaryLte:
+		return "<="
+	case ast.BinaryAnd:
+		return "&&"
+	case ast.BinaryOr:
+		return "||"
+	case ast.BinaryContains:
+		return "contains"
+	case ast.BinaryIn:
+		return "in"
+	default:
+		return "?"
+	}
 }
 
 func resolveLines(req compiler.PlanRequest, plan *compiler.Plan) []ast.ReqLine {

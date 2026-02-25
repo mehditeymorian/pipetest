@@ -42,6 +42,7 @@ Compile and execute flows.
 - run all `eval` checks first
 - if compilation succeeds, execute flows
 - evaluate request and flow assertions
+- print assertion results in a tree grouped by flow and request
 - emit summary to stdout
 - write CI artifacts
 
@@ -66,6 +67,15 @@ pipetest run examples/happy-path.pt
 - `--fail-fast`: stop all execution after first flow failure
 - `--timeout <duration>`: override global timeout from file
 - `--verbose`: print execution progress logs while running requests
+- `--hide-passing-assertions`: keep assertion output but suppress successful assertions (`✅`)
+
+Pretty output behavior:
+
+- Assertion outcomes are printed as a tree:
+  - `- flow <flow-name>`
+  - `  - <request|request:alias>`
+  - `    - assertion <expr> ✅|❌`
+- Failed assertions are still recorded in diagnostics/reports, but `E_ASSERT_EXPECTED_TRUE` lines are not printed in pretty output.
 
 ---
 

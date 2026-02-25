@@ -105,6 +105,97 @@ func TestRequestCommandRunsSingleRequest(t *testing.T) {
 	}
 }
 
+func TestRunPrintsAssertionResults(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	reportDir := filepath.Join(dir, "artifacts")
+	program := "\nreq only:\n\tGET " + srv.URL + "\n\t? status == 200\n\nflow \"ok\":\n\tonly\n\t? only.status == 200\n"
+	path := filepath.Join(dir, "program.pt")
+	if err := os.WriteFile(path, []byte(program), 0o644); err != nil {
+		t.Fatalf("write program: %v", err)
+	}
+
+	var out, errOut strings.Builder
+	exitCode := run([]string{"run", "--report-dir", reportDir, path}, &out, &errOut)
+	if exitCode != 0 {
+		t.Fatalf("expected exit 0, got %d stderr=%s", exitCode, errOut.String())
+	}
+	if !strings.Contains(out.String(), "- flow ok") {
+		t.Fatalf("expected flow node output, got %q", out.String())
+	}
+	if !strings.Contains(out.String(), "  - only") {
+		t.Fatalf("expected request node output, got %q", out.String())
+	}
+	if !strings.Contains(out.String(), "    - assertion status == 200 ✅") {
+		t.Fatalf("expected request assertion output, got %q", out.String())
+	}
+	if !strings.Contains(out.String(), "  - assertion only.status == 200 ✅") {
+		t.Fatalf("expected flow assertion output, got %q", out.String())
+	}
+}
+
+func TestRunHidePassingAssertionsFlag(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	reportDir := filepath.Join(dir, "artifacts")
+	program := "\nreq only:\n\tGET " + srv.URL + "\n\t? status == 200\n\nflow \"ok\":\n\tonly\n"
+	path := filepath.Join(dir, "program.pt")
+	if err := os.WriteFile(path, []byte(program), 0o644); err != nil {
+		t.Fatalf("write program: %v", err)
+	}
+
+	var out, errOut strings.Builder
+	exitCode := run([]string{"run", "--hide-passing-assertions", "--report-dir", reportDir, path}, &out, &errOut)
+	if exitCode != 0 {
+		t.Fatalf("expected exit 0, got %d stderr=%s", exitCode, errOut.String())
+	}
+	if strings.Contains(out.String(), "assertion status == 200 ✅") {
+		t.Fatalf("did not expect successful assertion output, got %q", out.String())
+	}
+}
+
+func TestRunAssertionFailureSkipsPrettyDiagnosticLine(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"ok":false}`))
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	reportDir := filepath.Join(dir, "artifacts")
+	program := "\nreq only:\n\tGET " + srv.URL + "\n\t? status == 200\n\nflow \"broken\":\n\tonly\n"
+	path := filepath.Join(dir, "program.pt")
+	if err := os.WriteFile(path, []byte(program), 0o644); err != nil {
+		t.Fatalf("write program: %v", err)
+	}
+
+	var out, errOut strings.Builder
+	exitCode := run([]string{"run", "--report-dir", reportDir, path}, &out, &errOut)
+	if exitCode != 1 {
+		t.Fatalf("expected exit 1, got %d stderr=%s", exitCode, errOut.String())
+	}
+	if !strings.Contains(out.String(), "    - assertion status == 200 ❌") {
+		t.Fatalf("expected failed assertion output, got %q", out.String())
+	}
+	if strings.Contains(out.String(), "E_ASSERT_EXPECTED_TRUE") {
+		t.Fatalf("did not expect assertion diagnostic output, got %q", out.String())
+	}
+	if strings.Contains(out.String(), "request assertion failed") {
+		t.Fatalf("did not expect request assertion failure message, got %q", out.String())
+	}
+}
+
 func TestRunVerboseLogging(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

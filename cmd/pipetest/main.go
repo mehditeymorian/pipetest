@@ -23,8 +23,8 @@ import (
 
 const (
 	evalUsage    = "pipetest eval <program.pt> [--format pretty|json]"
-	runUsage     = "pipetest run <program.pt> [--report-dir dir] [--format pretty|json] [--timeout duration] [--verbose]"
-	requestUsage = "pipetest request <program.pt> <request-name> [--format pretty|json] [--timeout duration] [--verbose]"
+	runUsage     = "pipetest run <program.pt> [--report-dir dir] [--format pretty|json] [--timeout duration] [--verbose] [--hide-passing-assertions]"
+	requestUsage = "pipetest request <program.pt> <request-name> [--format pretty|json] [--timeout duration] [--verbose] [--hide-passing-assertions]"
 )
 
 type cliExitError struct {
@@ -117,10 +117,11 @@ func newEvalCmd(stdout io.Writer) *cobra.Command {
 
 func newRunCmd(stdout io.Writer) *cobra.Command {
 	var (
-		format    string
-		reportDir string
-		timeout   string
-		verbose   bool
+		format                string
+		reportDir             string
+		timeout               string
+		verbose               bool
+		hidePassingAssertions bool
 	)
 
 	runCmd := &cobra.Command{
@@ -136,7 +137,7 @@ func newRunCmd(stdout io.Writer) *cobra.Command {
 			if err := validateFormat(format); err != nil {
 				return &cliExitError{code: 2, msg: err.Error()}
 			}
-			runtimeOpt := runtime.Options{Verbose: verbose, LogWriter: stdout}
+			runtimeOpt := runtime.Options{Verbose: verbose, LogWriter: stdout, SuppressPassingAssertions: hidePassingAssertions}
 			if timeout != "" {
 				d, err := time.ParseDuration(timeout)
 				if err != nil {
@@ -179,14 +180,16 @@ func newRunCmd(stdout io.Writer) *cobra.Command {
 	runCmd.Flags().StringVar(&reportDir, "report-dir", "./pipetest-report", "directory for report artifacts")
 	runCmd.Flags().StringVar(&timeout, "timeout", "", "override timeout setting, e.g. 2s")
 	runCmd.Flags().BoolVar(&verbose, "verbose", false, "print verbose execution logs")
+	runCmd.Flags().BoolVar(&hidePassingAssertions, "hide-passing-assertions", false, "suppress printing successful assertions")
 	return runCmd
 }
 
 func newRequestCmd(stdout io.Writer) *cobra.Command {
 	var (
-		format  string
-		timeout string
-		verbose bool
+		format                string
+		timeout               string
+		verbose               bool
+		hidePassingAssertions bool
 	)
 
 	requestCmd := &cobra.Command{
@@ -202,7 +205,7 @@ func newRequestCmd(stdout io.Writer) *cobra.Command {
 			if err := validateFormat(format); err != nil {
 				return &cliExitError{code: 2, msg: err.Error()}
 			}
-			runtimeOpt := runtime.Options{Verbose: verbose, LogWriter: stdout}
+			runtimeOpt := runtime.Options{Verbose: verbose, LogWriter: stdout, SuppressPassingAssertions: hidePassingAssertions}
 			if timeout != "" {
 				d, err := time.ParseDuration(timeout)
 				if err != nil {
@@ -253,6 +256,7 @@ func newRequestCmd(stdout io.Writer) *cobra.Command {
 	requestCmd.Flags().StringVar(&format, "format", "pretty", "stdout format: pretty|json")
 	requestCmd.Flags().StringVar(&timeout, "timeout", "", "override timeout setting, e.g. 2s")
 	requestCmd.Flags().BoolVar(&verbose, "verbose", false, "print verbose execution logs")
+	requestCmd.Flags().BoolVar(&hidePassingAssertions, "hide-passing-assertions", false, "suppress printing successful assertions")
 	return requestCmd
 }
 
@@ -343,6 +347,9 @@ func printCommandResult(stdout io.Writer, cmd, format string, diags []diagnostic
 	switch format {
 	case "pretty":
 		for _, d := range diags {
+			if isHiddenPrettyDiagnostic(d) {
+				continue
+			}
 			_, _ = fmt.Fprintf(stdout, "ERROR %s %s:%d:%d %s\n", d.Code, d.File, d.Line, d.Column, d.Message)
 			if d.Hint != "" {
 				_, _ = fmt.Fprintf(stdout, "  hint: %s\n", d.Hint)
@@ -369,6 +376,10 @@ func printCommandResult(stdout io.Writer, cmd, format string, diags []diagnostic
 	default:
 		return fmt.Errorf("unknown --format %q (expected pretty|json)", format)
 	}
+}
+
+func isHiddenPrettyDiagnostic(d diagnostics.Diagnostic) bool {
+	return d.Code == "E_ASSERT_EXPECTED_TRUE"
 }
 
 func printUsage(stderr io.Writer) {
