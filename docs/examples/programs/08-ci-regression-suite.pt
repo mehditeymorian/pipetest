@@ -1,0 +1,18 @@
+import "./shared/common.pt"
+
+req tenantConfig:
+	GET /anything/tenant/:tenant_id/config
+	? status == 200
+
+req releaseStatus:
+	GET /anything/release/:release_channel
+	? status == 200
+
+flow "ci smoke":
+	sharedHealth -> tenantConfig:tenant -> releaseStatus:release
+	? tenant.status == 200
+	? release.status == 200
+
+flow "ci health only":
+	sharedHealth
+	? sharedHealth.status == 200

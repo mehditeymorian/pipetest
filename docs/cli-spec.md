@@ -62,12 +62,11 @@ pipetest run examples/happy-path.pt
 
 ## Global flags (recommended)
 
-- `--report-dir <dir>`: output directory for generated artifacts (default `./pipetest-report`)
-- `--format <pretty|json>`: stdout format
-- `--fail-fast`: stop all execution after first flow failure
-- `--timeout <duration>`: override global timeout from file
-- `--verbose`: print execution progress logs while running requests
-- `--hide-passing-assertions`: keep assertion output but suppress successful assertions (`✅`)
+- `--format <pretty|json>`: stdout format (all commands)
+- `--report-dir <dir>`: output directory for generated artifacts (run only, default `./pipetest-report`)
+- `--timeout <duration>`: override global timeout from file (`run` and `request`)
+- `--verbose`: print execution progress logs while running requests (`run` and `request`)
+- `--hide-passing-assertions`: keep assertion output but suppress successful assertions (`run` and `request`)
 
 Pretty output behavior:
 
@@ -85,6 +84,7 @@ When running `pipetest run`:
 
 - `pipetest-report.json`
 - `pipetest-junit.xml`
+- `pipetest-report.xml` (legacy compatibility alias to JUnit content)
 
 These files should always be written when execution starts, even if there are failures.
 
@@ -160,3 +160,11 @@ Compile and execute exactly one request from the program.
 ```bash
 pipetest request examples/happy-path.pt login --verbose
 ```
+
+## Related docs
+
+- [Language index](language/README.md)
+- [Language specification](language/specification.md)
+- [Feature reference](language/feature-reference.md)
+- [Execution model](language/execution-model.md)
+- [Examples catalog](examples/README.md)

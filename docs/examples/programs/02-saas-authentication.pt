@@ -1,0 +1,24 @@
+base "https://httpbin.org"
+timeout 8s
+
+req login:
+	POST /anything/auth/login
+	json { email: "qa@example.com", password: "secret-pass" }
+
+	pre hook {
+		req.header["X-Trace"] = uuid()
+	}
+
+	? status == 200
+	let token = #["json"]["email"]
+
+req listSessions:
+	GET /anything/sessions
+	auth bearer token
+	header Accept = "application/json"
+	? status == 200
+
+flow "saas auth flow":
+	login -> listSessions:sessions
+	? sessions.status == 200
+	? len(token) > 0

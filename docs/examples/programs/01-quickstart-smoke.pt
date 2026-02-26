@@ -1,0 +1,10 @@
+base "https://httpbin.org"
+timeout 5s
+
+req ping:
+	GET /get
+	? status == 200
+
+flow "quickstart smoke":
+	ping
+	? ping.status == 200

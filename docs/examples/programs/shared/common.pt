@@ -1,0 +1,9 @@
+base "https://httpbin.org"
+timeout 8s
+
+let tenant_id = "tenant-42"
+let release_channel = "stable"
+
+req sharedHealth:
+	GET /status/200
+	? status == 200

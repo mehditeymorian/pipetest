@@ -2,36 +2,45 @@
 
 `pipetest` is an open-source CLI and DSL for API testing.
 
-It lets you define API requests, connect them into multi-step flows, add assertions, and run everything in CI with JUnit/JSON reports.
+It is designed for simple onboarding and professional CI usage:
+- write API tests in `.pt` files
+- validate statically before execution
+- execute flow-based scenarios
+- publish JUnit/JSON reports for pipelines
 
-## Why `pipetest`
+## Table of Contents
 
-- **Language-first API tests**: define reusable requests and scenario flows in `.pt` files.
-- **Static validation before execution**: catch parser, import, and semantic errors with `pipetest eval`.
-- **Flow execution with diagnostics**: run all flows (or one request) and get deterministic output.
-- **CI-ready artifacts**: emits JUnit XML + JSON reports compatible with GitHub Actions and GitLab CI.
+- [Why pipetest](#why-pipetest)
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [CLI usage](#cli-usage)
+- [Language and examples](#language-and-examples)
+- [Documentation map](#documentation-map)
+- [Examples by scenario](#examples-by-scenario)
+- [CI integration](#ci-integration)
+- [Development](#development)
+- [Implementation workflow](#implementation-workflow)
+
+## Why pipetest
+
+- Language-first API tests with reusable requests and scenario flows.
+- Static validation (`eval`) before runtime.
+- Deterministic diagnostics and assertion reporting.
+- CI-ready artifacts (`pipetest-junit.xml`, `pipetest-report.xml`, `pipetest-report.json`).
 
 ## Installation
 
-### Option 1: Install from source with Go
+### Option 1: Install from source
 
 Requirements:
-
-- Go 1.24+
-
-Install:
+- Go `1.24+`
 
 ```bash
 go install github.com/mehditeymorian/pipetest/cmd/pipetest@latest
-```
-
-Then verify:
-
-```bash
 pipetest --help
 ```
 
-### Option 2: Build locally from this repository
+### Option 2: Build locally
 
 ```bash
 git clone https://github.com/mehditeymorian/pipetest.git
@@ -40,9 +49,7 @@ go build ./cmd/pipetest
 ./pipetest --help
 ```
 
-### Option 3: Pull container image from GitHub Container Registry
-
-Use the published GHCR image:
+### Option 3: Run container image
 
 ```bash
 docker run --rm ghcr.io/mehditeymorian/pipetest:latest --help
@@ -57,77 +64,40 @@ base "https://httpbin.org"
 timeout 5s
 
 req ping:
-  GET /get
-  ? status == 200
+	GET /get
+	? status == 200
 
 flow "smoke":
-  ping
-  ? ping.status == 200
+	ping
+	? ping.status == 200
 ```
 
-Run static checks only:
+Important: `pipetest` request/flow blocks use tab indentation.
+
+Run static checks:
 
 ```bash
 pipetest eval program.pt
 ```
 
-Run execution + reports:
+Run execution and write reports:
 
 ```bash
 pipetest run program.pt --report-dir ./pipetest-report
 ```
 
-## CLI commands
+## CLI usage
 
-`pipetest` currently supports three commands:
-
+`pipetest` commands:
 - `pipetest eval <program.pt>`
 - `pipetest run <program.pt>`
 - `pipetest request <program.pt> <request-name>`
 
-### `pipetest eval`
+### Exit codes
 
-Performs non-runtime validation only:
-
-- syntax and parser checks
-- import resolution and cycle checks
-- semantic validation
-
-Exit codes:
-
-- `0` = no diagnostics
-- `1` = static diagnostics found
-- `2` = CLI usage error
-
-### `pipetest run`
-
-Compiles and executes all flows in the program:
-
-- runs the same checks as `eval` first
-- executes request chains and assertions
-- writes report artifacts to `--report-dir` (default `./pipetest-report`)
-
-Exit codes:
-
-- `0` = all flows successful
-- `1` = compile/runtime/assertion failures
-- `2` = CLI usage error
-
-Artifacts written by `run`:
-
-- `pipetest-junit.xml`
-- `pipetest-report.xml` (legacy compatibility alias)
-- `pipetest-report.json`
-
-### `pipetest request`
-
-Compiles the program, selects one named request, and executes only that request as a synthetic one-step flow.
-
-Exit codes:
-
-- `0` = request run successful
-- `1` = compile/runtime/assertion failures
-- `2` = CLI usage error (including unknown request name)
+- `0`: success
+- `1`: compile/runtime/assertion diagnostics
+- `2`: CLI usage error
 
 ### Common flags
 
@@ -137,47 +107,52 @@ Exit codes:
 - `--hide-passing-assertions` (`run`, `request`)
 - `--report-dir <dir>` (`run` only)
 
-## Language overview
+For complete command behavior, see [docs/cli-spec.md](docs/cli-spec.md).
 
-A `.pt` file typically includes:
+## Language and examples
 
-- settings (`base`, `timeout`)
-- imports (`import "other.pt"`)
-- variables (`let x = ...`)
-- request declarations (`req Name:`)
-- flow declarations (`flow "name":`)
+Start here:
+- [Language documentation](docs/language/README.md)
+- [Examples documentation](docs/examples/README.md)
 
-Key features:
+Authoritative syntax grammar:
+- [grammar.ebnf](grammar.ebnf)
 
-- request inheritance (`req child(parent):`)
-- path parameters (`/groups/:group_id`)
-- optional `pre hook {}` and `post hook {}` blocks in requests
-- request-level and flow-level assertions (`? expr`)
-- flow step aliases (`reqName:alias`)
+Compatibility path retained:
+- [docs/language-guide.md](docs/language-guide.md)
 
-For a complete language/usage reference, see:
+## Documentation map
 
-- [`docs/language-guide.md`](docs/language-guide.md)
-- [`grammar.ebnf`](grammar.ebnf)
+- [docs/README.md](docs/README.md) - top-level docs index
+- [docs/language/specification.md](docs/language/specification.md) - DSL structure and rules
+- [docs/language/feature-reference.md](docs/language/feature-reference.md) - feature-by-feature usage
+- [docs/language/execution-model.md](docs/language/execution-model.md) - scope, hooks, bindings, errors
+- [docs/examples/README.md](docs/examples/README.md) - scenario index and run guide
+- [docs/diagnostics.md](docs/diagnostics.md) - diagnostic model and output shape
+- [docs/reporting.md](docs/reporting.md) - report artifacts and CI mapping
+
+## Examples by scenario
+
+- [01 Quickstart Smoke](docs/examples/01-quickstart-smoke.md)
+- [02 SaaS Authentication](docs/examples/02-saas-authentication.md)
+- [03 E-commerce Checkout](docs/examples/03-ecommerce-checkout.md)
+- [04 Payments Idempotency](docs/examples/04-payments-idempotency.md)
+- [05 Inventory Sync](docs/examples/05-inventory-sync.md)
+- [06 Logistics Tracking](docs/examples/06-logistics-tracking.md)
+- [07 Negative and Resilience](docs/examples/07-negative-resilience.md)
+- [08 CI Regression Suite](docs/examples/08-ci-regression-suite.md)
 
 ## CI integration
 
-For complete GitHub Actions and GitLab CI examples, see:
+Use `pipetest run` and upload generated artifacts:
+- `pipetest-junit.xml`
+- `pipetest-report.xml`
+- `pipetest-report.json`
 
-- [`docs/language-guide.md#ci-integration`](docs/language-guide.md#ci-integration)
-- [`docs/reporting.md`](docs/reporting.md)
-
-This repository includes two GitHub Actions workflows:
-
-- `.github/workflows/ci.yml`
-  - runs `go test ./...`
-  - runs `go build ./...`
-  - runs `golangci-lint run ./...`
-  - triggers on pull requests and all branch pushes
-- `.github/workflows/container-image.yml`
-  - builds a Docker image from `Dockerfile`
-  - smoke-tests the image on pull requests
-  - publishes tagged images to `ghcr.io/<owner>/pipetest` on `main` and version tags
+See:
+- [docs/cli-spec.md](docs/cli-spec.md)
+- [docs/reporting.md](docs/reporting.md)
+- [docs/examples/08-ci-regression-suite.md](docs/examples/08-ci-regression-suite.md)
 
 ## Development
 
@@ -190,23 +165,9 @@ go test ./...
 go build ./...
 ```
 
-## Documentation index
+## Implementation workflow
 
-- `grammar.ebnf` — authoritative language grammar
-- `docs/language-guide.md` — complete language and usage guide (installation, examples, CI)
-- `docs/plan.md` — product-level behavior and examples
-- `docs/language-constraints.md` — language constraints and non-goals
-- `docs/cli-spec.md` — detailed command behavior
-- `docs/diagnostics.md` — diagnostics taxonomy and output rules
-- `docs/reporting.md` — report mapping and CI artifact strategy
-- `docs/rule-sets.md` — lexer/semantic validation rules
-- `docs/implementation-roadmap.md` — implementation milestones
-
-## Implementation workflow (doc-first)
-
-To keep implementation aligned with project specs, this repo includes:
-
-- `AGENTS.md` — operating rules for doc-first, milestone-based implementation
-- `.codex/config.toml` — repo-scoped Codex execution defaults
-- `EXECPLAN.template.md` — template used to create milestone plans from `/docs`
-- `QUESTIONS.md` — capture ambiguities instead of guessing behavior
+- [AGENTS.md](AGENTS.md) - operating rules for doc-first implementation
+- [.codex/config.toml](.codex/config.toml) - repo-scoped Codex defaults
+- [EXECPLAN.template.md](EXECPLAN.template.md) - milestone planning template
+- [QUESTIONS.md](QUESTIONS.md) - ambiguity capture

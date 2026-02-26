@@ -1,0 +1,27 @@
+base "https://httpbin.org"
+timeout 8s
+
+let payment_id = "pay-1001"
+
+req createPayment:
+	POST /anything/payments
+	header Idempotency-Key = payment_id
+	query retry = 0
+	json { id: payment_id, amount: 1099, currency: "USD" }
+	? status == 200
+	let first_payment_id = #["json"]["id"]
+
+req retryPayment:
+	POST /anything/payments
+	header Idempotency-Key = payment_id
+	query retry = 1
+	json { id: payment_id, amount: 1099, currency: "USD" }
+	? status == 200
+	let second_payment_id = #["json"]["id"]
+
+flow "payments idempotency":
+	createPayment:first -> retryPayment:second
+	? first.status == 200
+	? second.status == 200
+	? first_payment_id == payment_id
+	? second_payment_id == payment_id

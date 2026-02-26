@@ -1,0 +1,20 @@
+base "https://jsonplaceholder.typicode.com"
+timeout 10s
+
+req listInventory:
+	GET /posts
+	? status == 200
+	let first_item_user_id = jsonpath(#, "$[0].userId")
+	let first_item_id = jsonpath(#, "$[0].id")
+
+req getInventoryItem:
+	GET /posts/:first_item_id
+	? status == 200
+
+flow "inventory consistency":
+	listInventory:list -> getInventoryItem:item
+	? list.status == 200
+	? item.status == 200
+	? jsonpath(item.res, "$.id") == first_item_id
+	? jsonpath(item.res, "$.userId") == first_item_user_id
+	? len(list.res) > 0

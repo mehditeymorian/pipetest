@@ -2,14 +2,15 @@
 
 `pipetest run` should produce deterministic, CI-friendly reports that make failures easy to triage from local runs and hosted pipelines.
 
-## Default and optional report formats
+## Report formats
 
-- **Default format: JUnit XML** (`pipetest-report.xml`)
-  - Recommended as the default because it is natively ingested by GitHub Actions ecosystem tooling and GitLab CI test reports.
-  - Allows each flow/request/assertion to appear as structured test cases with pass/fail metadata.
-- **Optional format: JSON summary** (`pipetest-report.json`)
-  - Useful for machine-readable post-processing (dashboards, custom analytics, flaky-test trend checks).
-  - Should be opt-in so simple CI usage remains zero-config while still enabling richer integrations.
+`pipetest run` writes all standard artifacts by default:
+
+- **JUnit XML** (`pipetest-junit.xml`)
+- **JUnit compatibility alias** (`pipetest-report.xml`)
+- **JSON summary** (`pipetest-report.json`)
+
+This keeps local and CI consumption simple without extra flags.
 
 ## Mapping strategy: DSL runtime -> test report model
 
@@ -34,8 +35,9 @@ Use a deterministic mapping so the same program always emits stable identifiers 
 
 Default output files from `pipetest run`:
 
-- `pipetest-report.xml` (always written unless explicitly disabled)
-- `pipetest-report.json` (written when JSON summary output is enabled)
+- `pipetest-junit.xml`
+- `pipetest-report.xml`
+- `pipetest-report.json`
 
 Recommendations:
 
@@ -118,3 +120,10 @@ Recommended failure message header format:
 ```
 
 Where `<kind>` is `assertion-failed` or `runtime-error`.
+
+## Related docs
+
+- [CLI specification](cli-spec.md)
+- [Language execution model](language/execution-model.md)
+- [Examples catalog](examples/README.md)
+- [CI regression suite example](examples/08-ci-regression-suite.md)

@@ -1,0 +1,23 @@
+base "https://dummyjson.com"
+timeout 10s
+
+req getProduct:
+	GET /products/1
+	? status == 200
+	let product_id = #.id
+
+req addToCart:
+	POST /carts/add
+	json { userId: 1, products: [{ id: product_id, quantity: 1 }] }
+	? status in [200, 201]
+	let cart_id = #.id
+
+req getCart:
+	GET /carts/:cart_id
+	? status == 200
+
+flow "checkout journey":
+	getProduct -> addToCart -> getCart:cart
+	? cart.status == 200
+	? cart.res.id == cart_id
+	? product_id == 1

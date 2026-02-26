@@ -1,0 +1,15 @@
+base "https://httpbin.org"
+timeout 2s
+
+req expectNotFound:
+	GET /status/404
+	? status == 404
+
+req delayedEndpoint:
+	GET /delay/3
+	? status == 200
+
+flow "negative resilience":
+	expectNotFound:notFound -> delayedEndpoint:slow
+	? notFound.status == 404
+	? slow.status == 200

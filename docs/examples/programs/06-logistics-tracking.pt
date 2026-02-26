@@ -1,0 +1,25 @@
+base "https://httpbin.org"
+timeout 8s
+
+let shipment_id = "SHIP-100"
+let stop_id = "A1"
+
+req trackShipment:
+	GET /anything/shipments/:shipment_id
+	? status == 200
+	let tracking_url = #.url
+
+req getStop:
+	GET /anything/shipments/:shipment_id/stops/:stop_id
+	? status == 200
+
+req auditTrail:
+	GET /anything/audit/{{shipment_id}}/{{stop_id}}
+	? status == 200
+
+flow "logistics tracking":
+	trackShipment:shipment -> getStop:stop -> auditTrail:audit
+	? shipment.status == 200
+	? stop.status == 200
+	? audit.status == 200
+	? tracking_url contains shipment_id
