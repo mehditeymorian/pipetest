@@ -180,6 +180,155 @@ flow "broken":
 	}
 }
 
+func TestExecuteInvalidJSONWithoutJSONAccessContinues(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("not-json"))
+	}))
+	defer srv.Close()
+
+	src := `
+base "` + srv.URL + `"
+
+req plain:
+	GET /plain
+	? status == 200
+
+flow "non-json-ok":
+	plain
+	? plain.status == 200
+`
+	plan := mustCompilePlan(t, "runtime-invalid-json-no-access.pt", src)
+	result := Execute(context.Background(), plan, Options{})
+	if len(result.Diags) != 0 {
+		t.Fatalf("expected no diagnostics, got %+v", result.Diags)
+	}
+	if len(result.Flows) != 1 || len(result.Flows[0].Steps) != 1 {
+		t.Fatalf("unexpected flow result: %+v", result.Flows)
+	}
+}
+
+func TestExecuteInvalidJSONRootValueAsString(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("not-json"))
+	}))
+	defer srv.Close()
+
+	src := `
+base "` + srv.URL + `"
+
+req plain:
+	GET /plain
+	post hook {
+	  println res
+	  println (#)
+	}
+	? res == "not-json"
+	? (#) == "not-json"
+	? len(#) == 8
+
+flow "non-json-root-string":
+	plain : first
+	? first.res == "not-json"
+`
+	plan := mustCompilePlan(t, "runtime-invalid-json-root-string.pt", src)
+	out := captureStdout(t, func() {
+		result := Execute(context.Background(), plan, Options{})
+		if len(result.Diags) != 0 {
+			t.Fatalf("expected no diagnostics, got %+v", result.Diags)
+		}
+		if len(result.Flows) != 1 || len(result.Flows[0].Steps) != 1 {
+			t.Fatalf("unexpected flow result: %+v", result.Flows)
+		}
+	})
+	if got := strings.Count(out, "not-json"); got < 2 {
+		t.Fatalf("expected invalid json body printed, got output %q", out)
+	}
+}
+
+func TestExecuteInvalidJSONRequestJSONAccessDiagnostic(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("not-json"))
+	}))
+	defer srv.Close()
+
+	src := `
+base "` + srv.URL + `"
+
+req plain:
+	GET /plain
+	? #.ok == true
+
+flow "json-access-fails":
+	plain
+`
+	plan := mustCompilePlan(t, "runtime-invalid-json-request-access.pt", src)
+	result := Execute(context.Background(), plan, Options{})
+	if len(result.Diags) == 0 {
+		t.Fatalf("expected diagnostics")
+	}
+	if result.Diags[0].Code != "E_RUNTIME_JSON_UNAVAILABLE" {
+		t.Fatalf("expected E_RUNTIME_JSON_UNAVAILABLE, got %s", result.Diags[0].Code)
+	}
+}
+
+func TestExecuteInvalidJSONRequestJSONPathAccessDiagnostic(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("not-json"))
+	}))
+	defer srv.Close()
+
+	src := `
+base "` + srv.URL + `"
+
+req plain:
+	GET /plain
+	? jsonpath(#, "$.ok") == true
+
+flow "jsonpath-access-fails":
+	plain
+`
+	plan := mustCompilePlan(t, "runtime-invalid-json-request-jsonpath-access.pt", src)
+	result := Execute(context.Background(), plan, Options{})
+	if len(result.Diags) == 0 {
+		t.Fatalf("expected diagnostics")
+	}
+	if result.Diags[0].Code != "E_RUNTIME_JSON_UNAVAILABLE" {
+		t.Fatalf("expected E_RUNTIME_JSON_UNAVAILABLE, got %s", result.Diags[0].Code)
+	}
+}
+
+func TestExecuteInvalidJSONFlowBindingAccessDiagnostic(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("not-json"))
+	}))
+	defer srv.Close()
+
+	src := `
+base "` + srv.URL + `"
+
+req plain:
+	GET /plain
+	? status == 200
+
+flow "json-access-fails":
+	plain : first
+	? first.res.ok == true
+`
+	plan := mustCompilePlan(t, "runtime-invalid-json-flow-access.pt", src)
+	result := Execute(context.Background(), plan, Options{})
+	if len(result.Diags) == 0 {
+		t.Fatalf("expected diagnostics")
+	}
+	if result.Diags[0].Code != "E_RUNTIME_JSON_UNAVAILABLE" {
+		t.Fatalf("expected E_RUNTIME_JSON_UNAVAILABLE, got %s", result.Diags[0].Code)
+	}
+}
+
 func TestCombineURL(t *testing.T) {
 	tests := []struct {
 		name string

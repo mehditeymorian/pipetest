@@ -58,6 +58,90 @@ type flowBinding struct {
 	Header map[string]any
 }
 
+type invalidJSONResponse struct {
+	raw string
+	err error
+}
+
+func (i invalidJSONResponse) Error() string {
+	if i.err == nil {
+		return "response body is not valid json"
+	}
+	return fmt.Sprintf("response body is not valid json: %v", i.err)
+}
+
+type invalidJSONString struct {
+	raw   string
+	cause error
+}
+
+func (i invalidJSONString) String() string {
+	return i.raw
+}
+
+type jsonAccessError struct {
+	cause error
+}
+
+func (e jsonAccessError) Error() string {
+	if e.cause == nil {
+		return "response json is unavailable"
+	}
+	return fmt.Sprintf("response json is unavailable: %v", e.cause)
+}
+
+func newJSONAccessError(v any) error {
+	switch invalid := v.(type) {
+	case invalidJSONResponse:
+		return jsonAccessError{cause: invalid}
+	case invalidJSONString:
+		if invalid.cause != nil {
+			return jsonAccessError{cause: invalid.cause}
+		}
+		return jsonAccessError{cause: errors.New("response body is not valid json")}
+	default:
+		return nil
+	}
+}
+
+func responseExprValue(v any) any {
+	invalid, ok := v.(invalidJSONResponse)
+	if !ok {
+		return v
+	}
+	return invalidJSONString{raw: invalid.raw, cause: invalid}
+}
+
+func normalizeExprValue(v any) any {
+	switch x := v.(type) {
+	case invalidJSONResponse:
+		return x.raw
+	case invalidJSONString:
+		return x.raw
+	case []any:
+		out := make([]any, len(x))
+		for i, item := range x {
+			out[i] = normalizeExprValue(item)
+		}
+		return out
+	case map[string]any:
+		out := make(map[string]any, len(x))
+		for k, item := range x {
+			out[k] = normalizeExprValue(item)
+		}
+		return out
+	default:
+		return v
+	}
+}
+
+func expressionDiag(codeFallback, message, file string, span ast.Span, err error, flowName, request string) diagnostics.Diagnostic {
+	if errors.As(err, new(jsonAccessError)) {
+		return runtimeDiag("E_RUNTIME_JSON_UNAVAILABLE", message, file, span, err.Error(), flowName, request)
+	}
+	return runtimeDiag(codeFallback, message, file, span, err.Error(), flowName, request)
+}
+
 type requestContext struct {
 	reqObj    map[string]any
 	flowVars  map[string]any
@@ -88,7 +172,7 @@ func Execute(ctx context.Context, plan *compiler.Plan, opt Options) Result {
 	for _, g := range plan.Globals {
 		val, err := evalExpr(g.Value, requestContext{flowVars: globals})
 		if err != nil {
-			res.Diags = append(res.Diags, runtimeDiag("E_RUNTIME_EXPRESSION", fmt.Sprintf("failed to evaluate global let %s", g.Name), plan.EntryPath, g.Span, err.Error(), "", ""))
+			res.Diags = append(res.Diags, expressionDiag("E_RUNTIME_EXPRESSION", fmt.Sprintf("failed to evaluate global let %s", g.Name), plan.EntryPath, g.Span, err, "", ""))
 			continue
 		}
 		globals[g.Name] = val
@@ -107,7 +191,7 @@ func Execute(ctx context.Context, plan *compiler.Plan, opt Options) Result {
 		for _, pre := range prelude {
 			val, err := evalExpr(pre.Value, requestContext{flowVars: flowVars})
 			if err != nil {
-				res.Diags = append(res.Diags, runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate flow prelude let", plan.EntryPath, pre.Span, err.Error(), flow.Name, ""))
+				res.Diags = append(res.Diags, expressionDiag("E_RUNTIME_EXPRESSION", "failed to evaluate flow prelude let", plan.EntryPath, pre.Span, err, flow.Name, ""))
 				continue
 			}
 			flowVars[pre.Name] = val
@@ -133,7 +217,7 @@ func Execute(ctx context.Context, plan *compiler.Plan, opt Options) Result {
 			v, err := evalExpr(as.Expr, requestContext{flowVars: flowVars, flowViews: flowViews})
 			if err != nil {
 				assertionLog.log(flow.Name, "", as.Expr, false)
-				res.Diags = append(res.Diags, runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate flow assertion", plan.EntryPath, as.Span, err.Error(), flow.Name, ""))
+				res.Diags = append(res.Diags, expressionDiag("E_RUNTIME_EXPRESSION", "failed to evaluate flow assertion", plan.EntryPath, as.Span, err, flow.Name, ""))
 				continue
 			}
 			ok, cast := asBool(v)
@@ -280,7 +364,7 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 	var resJSON any
 	if len(bytes.TrimSpace(respRaw)) > 0 {
 		if err := json.Unmarshal(respRaw, &resJSON); err != nil {
-			return nil, ptr(runtimeDiag("E_RUNTIME_TRANSPORT", "response is not valid json", plan.EntryPath, req.Decl.Span, err.Error(), flowName, requestID))
+			resJSON = invalidJSONResponse{raw: string(respRaw), err: err}
 		}
 	}
 	headers := map[string]any{}
@@ -317,7 +401,7 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 			v, err := evalExpr(l.Expr, rctx)
 			if err != nil {
 				assertionLog.log(flowName, requestID, l.Expr, false)
-				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate request assertion", plan.EntryPath, l.Span, err.Error(), flowName, requestID))
+				return nil, ptr(expressionDiag("E_RUNTIME_EXPRESSION", "failed to evaluate request assertion", plan.EntryPath, l.Span, err, flowName, requestID))
 			}
 			ok, cast := asBool(v)
 			assertionLog.log(flowName, requestID, l.Expr, cast == nil && ok)
@@ -331,7 +415,7 @@ func executeRequest(ctx context.Context, plan *compiler.Plan, req compiler.PlanR
 		case *ast.LetStmt:
 			v, err := evalExpr(l.Value, rctx)
 			if err != nil {
-				return nil, ptr(runtimeDiag("E_RUNTIME_EXPRESSION", "failed to evaluate request let", plan.EntryPath, l.Span, err.Error(), flowName, requestID))
+				return nil, ptr(expressionDiag("E_RUNTIME_EXPRESSION", "failed to evaluate request let", plan.EntryPath, l.Span, err, flowName, requestID))
 			}
 			flowVars[l.Name] = v
 		}
@@ -586,6 +670,10 @@ func isMissingTemplateVariableError(err error) bool {
 
 func interpolateValue(v any, vars map[string]any) (any, error) {
 	switch x := v.(type) {
+	case invalidJSONString:
+		return x.raw, nil
+	case invalidJSONResponse:
+		return x.raw, nil
 	case string:
 		return interpolateString(x, vars)
 	case []any:
@@ -856,7 +944,7 @@ func evalExpr(expr ast.Expr, rctx requestContext) (any, error) {
 	case *ast.DollarExpr:
 		return rctx.reqObj, nil
 	case *ast.HashExpr:
-		return rctx.resJSON, nil
+		return responseExprValue(rctx.resJSON), nil
 	case *ast.IdentExpr:
 		switch e.Name {
 		case "status":
@@ -866,13 +954,14 @@ func evalExpr(expr ast.Expr, rctx requestContext) (any, error) {
 		case "req":
 			return rctx.reqObj, nil
 		case "res":
-			return rctx.resJSON, nil
+			return responseExprValue(rctx.resJSON), nil
 		}
 		if v, ok := rctx.flowVars[e.Name]; ok {
 			return v, nil
 		}
 		if b, ok := rctx.flowViews[e.Name]; ok {
-			return map[string]any{"res": b.Res, "req": b.Req, "status": float64(b.Status), "header": b.Header}, nil
+			resVal := responseExprValue(b.Res)
+			return map[string]any{"res": resVal, "req": b.Req, "status": float64(b.Status), "header": b.Header}, nil
 		}
 		return nil, fmt.Errorf("undefined identifier %s", e.Name)
 	case *ast.ParenExpr:
@@ -882,6 +971,7 @@ func evalExpr(expr ast.Expr, rctx requestContext) (any, error) {
 		if err != nil {
 			return nil, err
 		}
+		x = normalizeExprValue(x)
 		switch e.Op {
 		case ast.UnaryNot:
 			b, err := asBool(x)
@@ -907,6 +997,8 @@ func evalExpr(expr ast.Expr, rctx requestContext) (any, error) {
 		if err != nil {
 			return nil, err
 		}
+		left = normalizeExprValue(left)
+		right = normalizeExprValue(right)
 		switch e.Op {
 		case ast.BinaryEq:
 			return deepEqual(left, right), nil
@@ -1053,6 +1145,9 @@ func evalExpr(expr ast.Expr, rctx requestContext) (any, error) {
 		if err != nil {
 			return nil, err
 		}
+		if err := newJSONAccessError(x); err != nil {
+			return nil, err
+		}
 		obj, ok := x.(map[string]any)
 		if !ok {
 			return nil, fmt.Errorf("field access on non-object")
@@ -1061,6 +1156,9 @@ func evalExpr(expr ast.Expr, rctx requestContext) (any, error) {
 	case *ast.IndexExpr:
 		x, err := evalExpr(e.X, rctx)
 		if err != nil {
+			return nil, err
+		}
+		if err := newJSONAccessError(x); err != nil {
 			return nil, err
 		}
 		idx, err := evalExpr(e.Index, rctx)
@@ -1096,12 +1194,16 @@ func evalExpr(expr ast.Expr, rctx requestContext) (any, error) {
 			}
 			args = append(args, v)
 		}
+		normArgs := make([]any, len(args))
+		for i, arg := range args {
+			normArgs[i] = normalizeExprValue(arg)
+		}
 		switch callee.Name {
 		case "env":
 			if len(args) != 1 {
 				return nil, fmt.Errorf("env expects 1 arg")
 			}
-			return os.Getenv(fmt.Sprint(args[0])), nil
+			return os.Getenv(fmt.Sprint(normArgs[0])), nil
 		case "uuid":
 			if len(args) != 0 {
 				return nil, fmt.Errorf("uuid expects no args")
@@ -1111,7 +1213,7 @@ func evalExpr(expr ast.Expr, rctx requestContext) (any, error) {
 			if len(args) != 1 {
 				return nil, fmt.Errorf("len expects 1 arg")
 			}
-			switch v := args[0].(type) {
+			switch v := normArgs[0].(type) {
 			case []any:
 				return float64(len(v)), nil
 			case map[string]any:
@@ -1125,16 +1227,19 @@ func evalExpr(expr ast.Expr, rctx requestContext) (any, error) {
 			if len(args) != 2 {
 				return nil, fmt.Errorf("regex expects 2 args")
 			}
-			re, err := regexp.Compile(fmt.Sprint(args[0]))
+			re, err := regexp.Compile(fmt.Sprint(normArgs[0]))
 			if err != nil {
 				return nil, fmt.Errorf("invalid regex: %w", err)
 			}
-			return re.MatchString(fmt.Sprint(args[1])), nil
+			return re.MatchString(fmt.Sprint(normArgs[1])), nil
 		case "jsonpath":
 			if len(args) != 2 {
 				return nil, fmt.Errorf("jsonpath expects 2 args")
 			}
-			return jsonPathLookup(args[0], fmt.Sprint(args[1]))
+			if err := newJSONAccessError(args[0]); err != nil {
+				return nil, err
+			}
+			return jsonPathLookup(normArgs[0], fmt.Sprint(normArgs[1]))
 		case "now":
 			if len(args) != 0 {
 				return nil, fmt.Errorf("now expects no args")
@@ -1144,7 +1249,7 @@ func evalExpr(expr ast.Expr, rctx requestContext) (any, error) {
 			if len(args) != 1 {
 				return nil, fmt.Errorf("urlencode expects 1 arg")
 			}
-			return url.QueryEscape(fmt.Sprint(args[0])), nil
+			return url.QueryEscape(fmt.Sprint(normArgs[0])), nil
 		default:
 			return nil, fmt.Errorf("unknown function %s", callee.Name)
 		}

@@ -10,6 +10,7 @@ All diagnostics MUST use a stable code in one of these namespaces:
 - `E_IMPORT_*`: import graph and file-loading errors.
 - `E_SEM_*`: semantic validation errors detected before execution.
 - `E_RUNTIME_*`: runtime execution failures while running flows/requests.
+- `E_RUNTIME_JSON_UNAVAILABLE`: a JSON-dependent access (field/index/jsonpath) was attempted on `#`, `res`, or `<binding>.res` when the response body was not valid JSON.
 - `E_ASSERT_*`: assertion evaluation failures.
 
 ### Initial source list and finalized naming
