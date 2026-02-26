@@ -2,7 +2,7 @@
 
 title: Lazy handling for invalid JSON responses
 
-description: Prevent hard runtime failure on invalid JSON responses unless JSON-dependent values are accessed; request execution should continue when response JSON is malformed and only raise errors when `#`, `<binding>.res`, or other JSON access paths are evaluated.
+description: Prevent hard runtime failure on invalid JSON responses unless JSON-dependent values are accessed; request execution should continue when response JSON is malformed and only raise errors when `#`, `<binding>.res`, or other JSON access paths are evaluated. the response can be used as a whole to print even if it is not json.
 
 files:
 - internal/runtime/
