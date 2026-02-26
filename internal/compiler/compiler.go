@@ -42,6 +42,7 @@ type PlanRequest struct {
 	Name   string        `json:"name"`
 	Parent *string       `json:"parent,omitempty"`
 	HTTP   *ast.HttpLine `json:"http,omitempty"`
+	Lines  []ast.ReqLine `json:"-"`
 	Decl   *ast.ReqDecl  `json:"-"`
 }
 
@@ -85,6 +86,7 @@ type compiler struct {
 	plan      *Plan
 
 	reqs    map[string]*reqInfo
+	effReqs map[string][]ast.ReqLine
 	globals map[string]struct{}
 }
 
@@ -96,12 +98,59 @@ type reqInfo struct {
 func (c *compiler) run() {
 	c.passImports()
 	c.passSymbols()
+	c.passRequestInheritance()
 	c.passRequests()
 	c.passFlows()
 	if len(c.diags) > 0 {
 		return
 	}
 	c.buildPlan()
+}
+
+func (c *compiler) passRequestInheritance() {
+	c.effReqs = map[string][]ast.ReqLine{}
+	state := map[string]int{}
+
+	var resolve func(name string) []ast.ReqLine
+	resolve = func(name string) []ast.ReqLine {
+		if lines, ok := c.effReqs[name]; ok {
+			return lines
+		}
+		st := state[name]
+		if st == 1 {
+			req := c.reqs[name]
+			if req != nil {
+				c.addDiagAt("E_SEM_INHERITANCE_CYCLE", "request inheritance cycle detected", req.File, req.Decl.Span, "remove circular parent chains")
+			}
+			return nil
+		}
+		if st == 2 {
+			return c.effReqs[name]
+		}
+
+		req := c.reqs[name]
+		if req == nil {
+			return nil
+		}
+		state[name] = 1
+		var parent []ast.ReqLine
+		if req.Decl.Parent != nil {
+			parent = resolve(*req.Decl.Parent)
+		}
+		merged := mergeRequestLines(parent, req.Decl.Lines)
+		c.effReqs[name] = merged
+		state[name] = 2
+		return merged
+	}
+
+	names := make([]string, 0, len(c.reqs))
+	for name := range c.reqs {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		resolve(name)
+	}
 }
 
 func (c *compiler) passImports() {
@@ -182,7 +231,8 @@ func (c *compiler) passRequests() {
 	for _, req := range c.reqs {
 		httpCount, jsonCount := 0, 0
 		preHook, postHook := 0, 0
-		for _, line := range req.Decl.Lines {
+		lines := c.effReqs[req.Decl.Name]
+		for _, line := range lines {
 			switch l := line.(type) {
 			case *ast.HttpLine:
 				httpCount++
@@ -259,17 +309,17 @@ func (c *compiler) passFlows() {
 			} else {
 				bindings[binding] = struct{}{}
 			}
-			required := c.requiredVars(req.Decl)
+			required := c.requiredVars(c.effReqs[step.ReqName])
 			for _, name := range required {
 				if _, ok := defined[name]; !ok {
 					code := "E_SEM_UNDEFINED_VARIABLE"
-					if reqUsesPathParam(req.Decl, name) {
+					if reqUsesPathParam(c.effReqs[step.ReqName], name) {
 						code = "E_SEM_MISSING_PATH_PARAM_VAR"
 					}
 					c.addDiagAt(code, fmt.Sprintf("undefined variable: %s", name), req.File, req.Decl.Span, "define variable globally, in flow prelude, or in prior request lets")
 				}
 			}
-			for _, line := range req.Decl.Lines {
+			for _, line := range c.effReqs[step.ReqName] {
 				if l, ok := line.(*ast.LetStmt); ok {
 					defined[l.Name] = struct{}{}
 				}
@@ -311,8 +361,9 @@ func (c *compiler) buildPlan() {
 		}
 	}
 	for name, req := range c.reqs {
-		pr := PlanRequest{Name: name, Parent: req.Decl.Parent, Decl: req.Decl}
-		for _, line := range req.Decl.Lines {
+		lines := c.effReqs[name]
+		pr := PlanRequest{Name: name, Parent: req.Decl.Parent, Decl: req.Decl, Lines: lines}
+		for _, line := range lines {
 			if http, ok := line.(*ast.HttpLine); ok {
 				pr.HTTP = http
 				break
@@ -428,7 +479,7 @@ func isHashRef(expr ast.Expr) bool {
 	return false
 }
 
-func (c *compiler) requiredVars(req *ast.ReqDecl) []string {
+func (c *compiler) requiredVars(lines []ast.ReqLine) []string {
 	seen := map[string]struct{}{}
 	out := []string{}
 	add := func(name string) {
@@ -438,7 +489,7 @@ func (c *compiler) requiredVars(req *ast.ReqDecl) []string {
 		seen[name] = struct{}{}
 		out = append(out, name)
 	}
-	for _, line := range req.Lines {
+	for _, line := range lines {
 		switch l := line.(type) {
 		case *ast.HttpLine:
 			for _, m := range pathParamRE.FindAllStringSubmatch(l.Path, -1) {
@@ -523,8 +574,8 @@ func (c *compiler) requiredVars(req *ast.ReqDecl) []string {
 	return out
 }
 
-func reqUsesPathParam(req *ast.ReqDecl, name string) bool {
-	for _, line := range req.Lines {
+func reqUsesPathParam(lines []ast.ReqLine, name string) bool {
+	for _, line := range lines {
 		http, ok := line.(*ast.HttpLine)
 		if !ok {
 			continue
@@ -536,6 +587,104 @@ func reqUsesPathParam(req *ast.ReqDecl, name string) bool {
 		}
 	}
 	return false
+}
+
+func mergeRequestLines(parent, child []ast.ReqLine) []ast.ReqLine {
+	type shape struct {
+		http    *ast.HttpLine
+		auth    *ast.AuthDirective
+		json    *ast.JsonDirective
+		pre     *ast.HookBlock
+		post    *ast.HookBlock
+		headers map[string]*ast.HeaderDirective
+		headerK []string
+		queries map[string]*ast.QueryDirective
+		queryK  []string
+		asserts []*ast.AssertStmt
+		lets    map[string]*ast.LetStmt
+		letK    []string
+	}
+	s := shape{headers: map[string]*ast.HeaderDirective{}, queries: map[string]*ast.QueryDirective{}, lets: map[string]*ast.LetStmt{}}
+
+	applyLines := func(lines []ast.ReqLine, isChild bool) {
+		childAsserts := []*ast.AssertStmt{}
+		for _, line := range lines {
+			switch l := line.(type) {
+			case *ast.HttpLine:
+				s.http = l
+			case *ast.AuthDirective:
+				s.auth = l
+			case *ast.JsonDirective:
+				s.json = l
+			case *ast.HookBlock:
+				if l.Kind == ast.HookPre {
+					s.pre = l
+				}
+				if l.Kind == ast.HookPost {
+					s.post = l
+				}
+			case *ast.HeaderDirective:
+				key := l.Key.Name
+				if _, ok := s.headers[key]; !ok {
+					s.headerK = append(s.headerK, key)
+				}
+				s.headers[key] = l
+			case *ast.QueryDirective:
+				key := l.Key.Name
+				if _, ok := s.queries[key]; !ok {
+					s.queryK = append(s.queryK, key)
+				}
+				s.queries[key] = l
+			case *ast.AssertStmt:
+				if isChild {
+					childAsserts = append(childAsserts, l)
+				} else {
+					s.asserts = append(s.asserts, l)
+				}
+			case *ast.LetStmt:
+				if _, ok := s.lets[l.Name]; !ok {
+					s.letK = append(s.letK, l.Name)
+				}
+				s.lets[l.Name] = l
+			}
+		}
+		if isChild && len(childAsserts) > 0 {
+			s.asserts = childAsserts
+		}
+	}
+
+	applyLines(parent, false)
+	applyLines(child, true)
+
+	out := []ast.ReqLine{}
+	if s.http != nil {
+		out = append(out, s.http)
+	}
+	if s.auth != nil {
+		out = append(out, s.auth)
+	}
+	for _, key := range s.headerK {
+		out = append(out, s.headers[key])
+	}
+	for _, key := range s.queryK {
+		out = append(out, s.queries[key])
+	}
+	if s.json != nil {
+		out = append(out, s.json)
+	}
+	if s.pre != nil {
+		out = append(out, s.pre)
+	}
+	if s.post != nil {
+		out = append(out, s.post)
+	}
+	for _, as := range s.asserts {
+		out = append(out, as)
+	}
+	for _, key := range s.letK {
+		out = append(out, s.lets[key])
+	}
+	return out
 }
 
 func collectExprIdents(expr ast.Expr) []string {

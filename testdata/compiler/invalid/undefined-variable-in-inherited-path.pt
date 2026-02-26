@@ -1,0 +1,8 @@
+req parentReq:
+	GET /groups/:group_id
+
+req child(parentReq):
+	header X = "ok"
+
+flow "missing-inherited-var":
+	child

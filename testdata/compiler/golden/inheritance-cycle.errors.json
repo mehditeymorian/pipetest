@@ -1,0 +1,12 @@
+[
+  {
+    "Severity": "error",
+    "Code": "E_SEM_INHERITANCE_CYCLE",
+    "Message": "request inheritance cycle detected",
+    "File": "../../testdata/compiler/invalid/inheritance-cycle.pt",
+    "Line": 1,
+    "Column": 1,
+    "Hint": "remove circular parent chains",
+    "Related": null
+  }
+]

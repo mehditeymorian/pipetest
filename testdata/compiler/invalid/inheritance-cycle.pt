@@ -1,0 +1,8 @@
+req a(b):
+	GET /a
+
+req b(a):
+	GET /b
+
+flow "cycle":
+	a

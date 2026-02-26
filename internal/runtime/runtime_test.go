@@ -485,3 +485,55 @@ func compilePlan(t *testing.T, path, src string) (*compiler.Plan, []diagnostics.
 	}
 	return compiler.Compile(path, []compiler.Module{{Path: path, Program: prog}})
 }
+
+func TestExecuteRequestInheritanceChildOverridesParent(t *testing.T) {
+	fromPre := ""
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fromPre = r.Header.Get("X-From-Pre")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"token":"child","value":"child"}`))
+	}))
+	defer srv.Close()
+
+	src := `
+base "` + srv.URL + `"
+let id = "abc"
+
+req parent:
+	GET /parent/:id
+	header XReq = "parent"
+	pre hook {
+	  req.header["X-From-Pre"] = "parent"
+	}
+	post hook {
+	  seen = "parent"
+	}
+	? status == 201
+	let token = "parent"
+
+req child(parent):
+	GET /child/:id
+	header XReq = "child"
+	pre hook {
+	  req.header["X-From-Pre"] = "child"
+	}
+	post hook {
+	  seen = #.value
+	}
+	? status == 200
+	let token = #.token
+
+flow "inheritance":
+	child
+	? token == "child"
+	? child.res.value == "child"
+`
+	plan := mustCompilePlan(t, "runtime-inheritance-override.pt", src)
+	result := Execute(context.Background(), plan, Options{})
+	if len(result.Diags) != 0 {
+		t.Fatalf("expected no diagnostics, got %+v", result.Diags)
+	}
+	if fromPre != "child" {
+		t.Fatalf("expected child pre hook header, got %q", fromPre)
+	}
+}

@@ -1,0 +1,12 @@
+[
+  {
+    "Severity": "error",
+    "Code": "E_SEM_MISSING_PATH_PARAM_VAR",
+    "Message": "undefined variable: group_id",
+    "File": "../../testdata/compiler/invalid/undefined-variable-in-inherited-path.pt",
+    "Line": 4,
+    "Column": 1,
+    "Hint": "define variable globally, in flow prelude, or in prior request lets",
+    "Related": null
+  }
+]

@@ -501,6 +501,9 @@ func binaryOpString(op ast.BinaryOp) string {
 }
 
 func resolveLines(req compiler.PlanRequest, plan *compiler.Plan) []ast.ReqLine {
+	if len(req.Lines) > 0 {
+		return req.Lines
+	}
 	if req.Decl == nil {
 		return nil
 	}
