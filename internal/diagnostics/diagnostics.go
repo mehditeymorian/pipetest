@@ -87,12 +87,5 @@ func relatedSortKey(r *Related) relatedKey {
 
 func dedupeKey(d Diagnostic) string {
 	rk := relatedSortKey(d.Related)
-	return d.Code + "|" + d.File + "|" + strconv.Itoa(d.Line) + "|" + strconv.Itoa(d.Column) + "|" + d.Message + "|" + rk.file + "|" + strconv.Itoa(rk.line) + "|" + strconv.Itoa(rk.column) + "|" + ptrStr(d.Flow) + "|" + ptrStr(d.Request)
-}
-
-func ptrStr(v *string) string {
-	if v == nil {
-		return ""
-	}
-	return *v
+	return d.Code + "|" + d.File + "|" + strconv.Itoa(d.Line) + "|" + strconv.Itoa(d.Column) + "|" + d.Message + "|" + rk.file + "|" + strconv.Itoa(rk.line) + "|" + strconv.Itoa(rk.column)
 }
