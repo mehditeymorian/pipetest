@@ -1,0 +1,36 @@
+{
+  "entry_path": "../../testdata/compiler/valid/template-request-context-in-hooks.pt",
+  "requests": [
+    {
+      "name": "contextPrint",
+      "http": {
+        "Method": 0,
+        "Path": "/items",
+        "Span": {
+          "Start": {
+            "Offset": 19,
+            "Line": 2,
+            "Column": 2
+          },
+          "End": {
+            "Offset": 29,
+            "Line": 2,
+            "Column": 12
+          }
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "name": "ctx",
+      "steps": [
+        {
+          "request": "contextPrint",
+          "binding": "contextPrint"
+        }
+      ],
+      "lets": null
+    }
+  ]
+}

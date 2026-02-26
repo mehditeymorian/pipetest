@@ -1,0 +1,9 @@
+req invalidContext:
+	GET /items
+	pre hook {
+	  println "status={{status}}"
+	}
+	? status == 200
+
+flow "ctx":
+	invalidContext

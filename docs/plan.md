@@ -191,6 +191,8 @@ Hook timing per request execution:
 4. `post hook {}` (if present)
 5. request-level `? ...` and `let ...` lines execute in order (as written)
 
+Template placeholders inside hook print arguments follow request timing scope: `{{req}}` is available in pre/post hooks, while `{{status}}` and `{{res}}` are available only in post hooks.
+
 > If you prefer assertions/lets to run before `post hook`, we can flip 4 and 5; the syntax stays the same. Pick one behavior and keep it consistent.
 
 ---

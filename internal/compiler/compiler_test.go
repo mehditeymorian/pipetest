@@ -24,6 +24,7 @@ func TestCompileValidPlan(t *testing.T) {
 	}{
 		{name: "multi-step-flow", entry: "../../testdata/compiler/valid/compile-single-flow.pt", golden: "../../testdata/compiler/golden/compile-single-flow.plan.json"},
 		{name: "single-step-flow", entry: "../../testdata/compiler/valid/compile-single-step-flow.pt", golden: "../../testdata/compiler/golden/compile-single-step-flow.plan.json"},
+		{name: "template-request-context-hooks", entry: "../../testdata/compiler/valid/template-request-context-in-hooks.pt", golden: "../../testdata/compiler/golden/template-request-context-in-hooks.plan.json"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -51,6 +52,7 @@ func TestCompileInvalidDiagnostics(t *testing.T) {
 		{name: "duplicate-request", entry: "../../testdata/compiler/invalid/duplicate-request-name.pt", files: []string{"../../testdata/compiler/invalid/duplicate-request-name.pt"}, golden: "../../testdata/compiler/golden/duplicate-request-name.errors.json"},
 		{name: "undefined-path-var", entry: "../../testdata/compiler/invalid/undefined-variable-in-path.pt", files: []string{"../../testdata/compiler/invalid/undefined-variable-in-path.pt"}, golden: "../../testdata/compiler/golden/undefined-variable-in-path.errors.json"},
 		{name: "undefined-template-var", entry: "../../testdata/compiler/invalid/undefined-variable-in-template.pt", files: []string{"../../testdata/compiler/invalid/undefined-variable-in-template.pt"}, golden: "../../testdata/compiler/golden/undefined-variable-in-template.errors.json"},
+		{name: "template-status-in-pre-hook", entry: "../../testdata/compiler/invalid/template-status-in-pre-hook.pt", files: []string{"../../testdata/compiler/invalid/template-status-in-pre-hook.pt"}, golden: "../../testdata/compiler/golden/template-status-in-pre-hook.errors.json"},
 		{name: "import-cycle", entry: "../../testdata/compiler/invalid/import-cycle-a.pt", files: []string{"../../testdata/compiler/invalid/import-cycle-a.pt", "../../testdata/compiler/invalid/import-cycle-b.pt"}, golden: "../../testdata/compiler/golden/import-cycle.errors.json"},
 		{name: "inheritance-cycle", entry: "../../testdata/compiler/invalid/inheritance-cycle.pt", files: []string{"../../testdata/compiler/invalid/inheritance-cycle.pt"}, golden: "../../testdata/compiler/golden/inheritance-cycle.errors.json"},
 		{name: "undefined-inherited-path-var", entry: "../../testdata/compiler/invalid/undefined-variable-in-inherited-path.pt", files: []string{"../../testdata/compiler/invalid/undefined-variable-in-inherited-path.pt"}, golden: "../../testdata/compiler/golden/undefined-variable-in-inherited-path.errors.json"},

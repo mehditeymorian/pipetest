@@ -21,6 +21,22 @@ var reservedNames = map[string]struct{}{
 	"req": {}, "res": {}, "status": {}, "header": {}, "$": {}, "#": {},
 }
 
+var requestTemplateSymbols = map[string]struct{}{
+	"req":    {},
+	"res":    {},
+	"status": {},
+}
+
+var preHookTemplateSymbols = map[string]struct{}{
+	"req": {},
+}
+
+var postHookTemplateSymbols = map[string]struct{}{
+	"req":    {},
+	"res":    {},
+	"status": {},
+}
+
 // Module binds a parsed program to its canonical path.
 type Module struct {
 	Path    string
@@ -489,79 +505,73 @@ func (c *compiler) requiredVars(lines []ast.ReqLine) []string {
 		seen[name] = struct{}{}
 		out = append(out, name)
 	}
+	addTemplateVars := func(names []string, allowed map[string]struct{}) {
+		for _, name := range names {
+			if _, isRequestTemplate := requestTemplateSymbols[name]; isRequestTemplate {
+				if _, ok := allowed[name]; ok {
+					continue
+				}
+			}
+			add(name)
+		}
+	}
 	for _, line := range lines {
 		switch l := line.(type) {
 		case *ast.HttpLine:
 			for _, m := range pathParamRE.FindAllStringSubmatch(l.Path, -1) {
 				add(m[1])
 			}
-			for _, name := range collectTemplateVarsInString(l.Path) {
-				add(name)
-			}
+			addTemplateVars(collectTemplateVarsInString(l.Path), nil)
 		case *ast.HeaderDirective:
-			for _, name := range collectTemplateVarsInExpr(l.Value) {
-				add(name)
-			}
+			addTemplateVars(collectTemplateVarsInExpr(l.Value), nil)
 			for _, id := range collectExprIdents(l.Value) {
 				add(id)
 			}
 		case *ast.QueryDirective:
-			for _, name := range collectTemplateVarsInExpr(l.Value) {
-				add(name)
-			}
+			addTemplateVars(collectTemplateVarsInExpr(l.Value), nil)
 			for _, id := range collectExprIdents(l.Value) {
 				add(id)
 			}
 		case *ast.AuthDirective:
-			for _, name := range collectTemplateVarsInExpr(l.Value) {
-				add(name)
-			}
+			addTemplateVars(collectTemplateVarsInExpr(l.Value), nil)
 			for _, id := range collectExprIdents(l.Value) {
 				add(id)
 			}
 		case *ast.JsonDirective:
-			for _, name := range collectTemplateVarsInExpr(l.Value) {
-				add(name)
-			}
+			addTemplateVars(collectTemplateVarsInExpr(l.Value), nil)
 			for _, id := range collectExprIdents(l.Value) {
 				add(id)
 			}
 		case *ast.AssertStmt:
-			for _, name := range collectTemplateVarsInExpr(l.Expr) {
-				add(name)
-			}
+			addTemplateVars(collectTemplateVarsInExpr(l.Expr), postHookTemplateSymbols)
 			for _, id := range collectExprIdents(l.Expr) {
 				add(id)
 			}
 		case *ast.LetStmt:
-			for _, name := range collectTemplateVarsInExpr(l.Value) {
-				add(name)
-			}
+			addTemplateVars(collectTemplateVarsInExpr(l.Value), postHookTemplateSymbols)
 			for _, id := range collectExprIdents(l.Value) {
 				add(id)
 			}
 		case *ast.HookBlock:
+			allowedTemplateSymbols := preHookTemplateSymbols
+			if l.Kind == ast.HookPost {
+				allowedTemplateSymbols = postHookTemplateSymbols
+			}
 			for _, s := range l.Stmts {
 				switch hs := s.(type) {
 				case *ast.AssignStmt:
-					for _, name := range collectTemplateVarsInExpr(hs.Value) {
-						add(name)
-					}
+					addTemplateVars(collectTemplateVarsInExpr(hs.Value), allowedTemplateSymbols)
 					for _, id := range collectExprIdents(hs.Value) {
 						add(id)
 					}
 				case *ast.ExprStmt:
-					for _, name := range collectTemplateVarsInExpr(hs.Expr) {
-						add(name)
-					}
+					addTemplateVars(collectTemplateVarsInExpr(hs.Expr), allowedTemplateSymbols)
 					for _, id := range collectExprIdents(hs.Expr) {
 						add(id)
 					}
 				case *ast.PrintStmt:
 					for _, arg := range hs.Args {
-						for _, name := range collectTemplateVarsInExpr(arg) {
-							add(name)
-						}
+						addTemplateVars(collectTemplateVarsInExpr(arg), allowedTemplateSymbols)
 						for _, id := range collectExprIdents(arg) {
 							add(id)
 						}

@@ -593,6 +593,87 @@ flow "print-template-vars-missing":
 	}
 }
 
+func TestExecuteHookPrintTemplateRequestContext(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	src := `
+base "` + srv.URL + `"
+
+req only:
+	GET /items
+	pre hook {
+	  println "pre={{req}}"
+	}
+	post hook {
+	  println "post-status={{status}}"
+	  println "post-res={{res}}"
+	}
+	? status == 200
+
+flow "ctx-template":
+	only
+`
+	plan := mustCompilePlan(t, "runtime-hook-template-request-context.pt", src)
+	out := captureStdout(t, func() {
+		result := Execute(context.Background(), plan, Options{})
+		if len(result.Diags) != 0 {
+			t.Fatalf("expected no diagnostics, got %+v", result.Diags)
+		}
+	})
+	if !strings.Contains(out, "pre=map[") {
+		t.Fatalf("expected rendered req template, got %q", out)
+	}
+	if !strings.Contains(out, "post-status=200") {
+		t.Fatalf("expected rendered status template, got %q", out)
+	}
+	if !strings.Contains(out, "post-res=map[ok:true]") {
+		t.Fatalf("expected rendered res template, got %q", out)
+	}
+}
+
+func TestCompilePreHookPrintStatusTemplateDiagnostic(t *testing.T) {
+	src := `
+req only:
+	GET /print
+	pre hook {
+	  println "status={{status}}"
+	}
+	? status == 200
+
+flow "pre-template-status":
+	only
+`
+	_, diags := compilePlan(t, "runtime-prehook-status-template-missing.pt", src)
+	if len(diags) == 0 {
+		t.Fatalf("expected diagnostics")
+	}
+	if diags[0].Code != "E_SEM_UNDEFINED_VARIABLE" {
+		t.Fatalf("expected E_SEM_UNDEFINED_VARIABLE, got %s", diags[0].Code)
+	}
+}
+
+func TestCompilePostHookPrintStatusTemplateNoDiagnostic(t *testing.T) {
+	src := `
+req only:
+	GET /print
+	post hook {
+	  println "status={{status}}"
+	  println "res={{res}}"
+	}
+	? status == 200
+
+flow "post-template-status":
+	only
+`
+	_, diags := compilePlan(t, "runtime-posthook-status-template-ok.pt", src)
+	if len(diags) != 0 {
+		t.Fatalf("expected no diagnostics, got %+v", diags)
+	}
+}
 func captureStdout(t *testing.T, fn func()) string {
 	t.Helper()
 	old := os.Stdout

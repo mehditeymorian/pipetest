@@ -758,7 +758,7 @@ func execPrintStmt(stmt *ast.PrintStmt, rctx requestContext) error {
 		if err != nil {
 			return err
 		}
-		v, err = interpolateValue(v, rctx.flowVars)
+		v, err = interpolateValue(v, requestTemplateVars(rctx))
 		if err != nil {
 			return err
 		}
@@ -779,6 +779,20 @@ func execPrintStmt(stmt *ast.PrintStmt, rctx requestContext) error {
 	return nil
 }
 
+func requestTemplateVars(rctx requestContext) map[string]any {
+	vars := make(map[string]any, len(rctx.flowVars)+3)
+	for k, v := range rctx.flowVars {
+		vars[k] = v
+	}
+	vars["req"] = rctx.reqObj
+	if rctx.status != 0 {
+		vars["status"] = rctx.status
+	}
+	if rctx.resJSON != nil {
+		vars["res"] = responseExprValue(rctx.resJSON)
+	}
+	return vars
+}
 func normalizePrintfArgs(format string, args []any) []any {
 	if len(args) == 0 {
 		return args

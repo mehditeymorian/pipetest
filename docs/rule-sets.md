@@ -427,7 +427,7 @@ For path params and string templates:
 
 * parse PATH string for occurrences of `/:<ident>` or `:<ident>` after `/`
 * parse string literals for `{{<ident>}}` placeholders
-* collect `<ident>` as required vars
+* collect `<ident>` as required vars, except request-context template symbols allowed by hook timing (`{{req}}` in pre/post; `{{status}}`/`{{res}}` in post only)
 
 ---
 

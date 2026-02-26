@@ -20,7 +20,7 @@ Tasks (MVP):
 | mvp-05-cli-reporting | done | 2026-02-25 |
 | mvp-06-request-inheritance-override | done | 2026-02-26 |
 | mvp-07-runtime-lazy-invalid-json | done | 2026-02-26 |
-| mvp-08-template-access-request-context | not-started | 2026-02-26 |
+| mvp-08-template-access-request-context | done | 2026-02-26 |
 
 History:
 - 2026-02-24: Created MVP task definitions under docs/tasks/ and initialized task state.
@@ -38,3 +38,5 @@ History:
 - 2026-02-26: Completed mvp-06-request-inheritance-override.
 
 - 2026-02-26: Completed mvp-07-runtime-lazy-invalid-json.
+
+- 2026-02-26: Completed mvp-08-template-access-request-context.

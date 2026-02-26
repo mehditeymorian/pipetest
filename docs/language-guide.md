@@ -289,7 +289,7 @@ req getGroup:
 
 If the variable is missing, runtime emits a deterministic error.
 
-The same `{{var_name}}` interpolation also applies to string arguments in hook `print`, `println`, and `printf` statements.
+The same `{{var_name}}` interpolation also applies to string arguments in hook `print`, `println`, and `printf` statements. In hook templates, request-context symbols are also available by timing: `{{req}}` in `pre` and `post` hooks, plus `{{status}}` and `{{res}}` in `post` hooks only.
 
 ## 4) End-to-end example
 

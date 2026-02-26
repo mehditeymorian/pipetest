@@ -1,0 +1,13 @@
+req contextPrint:
+	GET /items
+	pre hook {
+	  println "req={{req}}"
+	}
+	post hook {
+	  println "status={{status}}"
+	  println "res={{res}}"
+	}
+	? status == 200
+
+flow "ctx":
+	contextPrint
