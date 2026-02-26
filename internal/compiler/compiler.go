@@ -11,6 +11,7 @@ import (
 )
 
 var pathParamRE = regexp.MustCompile(`:([A-Za-z_][A-Za-z0-9_]*)`)
+var templateVarRE = regexp.MustCompile(`\{\{([A-Za-z_][A-Za-z0-9_]*)\}\}`)
 
 var builtins = map[string]struct{}{
 	"env": {}, "uuid": {}, "len": {}, "jsonpath": {}, "regex": {}, "now": {}, "urlencode": {},
@@ -443,27 +444,48 @@ func (c *compiler) requiredVars(req *ast.ReqDecl) []string {
 			for _, m := range pathParamRE.FindAllStringSubmatch(l.Path, -1) {
 				add(m[1])
 			}
+			for _, name := range collectTemplateVarsInString(l.Path) {
+				add(name)
+			}
 		case *ast.HeaderDirective:
+			for _, name := range collectTemplateVarsInExpr(l.Value) {
+				add(name)
+			}
 			for _, id := range collectExprIdents(l.Value) {
 				add(id)
 			}
 		case *ast.QueryDirective:
+			for _, name := range collectTemplateVarsInExpr(l.Value) {
+				add(name)
+			}
 			for _, id := range collectExprIdents(l.Value) {
 				add(id)
 			}
 		case *ast.AuthDirective:
+			for _, name := range collectTemplateVarsInExpr(l.Value) {
+				add(name)
+			}
 			for _, id := range collectExprIdents(l.Value) {
 				add(id)
 			}
 		case *ast.JsonDirective:
+			for _, name := range collectTemplateVarsInExpr(l.Value) {
+				add(name)
+			}
 			for _, id := range collectExprIdents(l.Value) {
 				add(id)
 			}
 		case *ast.AssertStmt:
+			for _, name := range collectTemplateVarsInExpr(l.Expr) {
+				add(name)
+			}
 			for _, id := range collectExprIdents(l.Expr) {
 				add(id)
 			}
 		case *ast.LetStmt:
+			for _, name := range collectTemplateVarsInExpr(l.Value) {
+				add(name)
+			}
 			for _, id := range collectExprIdents(l.Value) {
 				add(id)
 			}
@@ -471,15 +493,24 @@ func (c *compiler) requiredVars(req *ast.ReqDecl) []string {
 			for _, s := range l.Stmts {
 				switch hs := s.(type) {
 				case *ast.AssignStmt:
+					for _, name := range collectTemplateVarsInExpr(hs.Value) {
+						add(name)
+					}
 					for _, id := range collectExprIdents(hs.Value) {
 						add(id)
 					}
 				case *ast.ExprStmt:
+					for _, name := range collectTemplateVarsInExpr(hs.Expr) {
+						add(name)
+					}
 					for _, id := range collectExprIdents(hs.Expr) {
 						add(id)
 					}
 				case *ast.PrintStmt:
 					for _, arg := range hs.Args {
+						for _, name := range collectTemplateVarsInExpr(arg) {
+							add(name)
+						}
 						for _, id := range collectExprIdents(arg) {
 							add(id)
 						}
@@ -551,6 +582,77 @@ func collectExprIdents(expr ast.Expr) []string {
 			}
 		}
 	}
+	walk(expr)
+	sort.Strings(out)
+	return out
+}
+
+func collectTemplateVarsInString(raw string) []string {
+	if raw == "" {
+		return nil
+	}
+	seen := map[string]struct{}{}
+	out := []string{}
+	for _, m := range templateVarRE.FindAllStringSubmatch(raw, -1) {
+		if len(m) < 2 {
+			continue
+		}
+		if _, ok := seen[m[1]]; ok {
+			continue
+		}
+		seen[m[1]] = struct{}{}
+		out = append(out, m[1])
+	}
+	sort.Strings(out)
+	return out
+}
+
+func collectTemplateVarsInExpr(expr ast.Expr) []string {
+	seen := map[string]struct{}{}
+	out := []string{}
+	add := func(name string) {
+		if _, ok := seen[name]; ok {
+			return
+		}
+		seen[name] = struct{}{}
+		out = append(out, name)
+	}
+
+	var walk func(ast.Expr)
+	walk = func(e ast.Expr) {
+		switch n := e.(type) {
+		case *ast.StringLit:
+			for _, name := range collectTemplateVarsInString(n.Value) {
+				add(name)
+			}
+		case *ast.UnaryExpr:
+			walk(n.X)
+		case *ast.BinaryExpr:
+			walk(n.Left)
+			walk(n.Right)
+		case *ast.CallExpr:
+			walk(n.Callee)
+			for _, a := range n.Args {
+				walk(a)
+			}
+		case *ast.FieldExpr:
+			walk(n.X)
+		case *ast.IndexExpr:
+			walk(n.X)
+			walk(n.Index)
+		case *ast.ParenExpr:
+			walk(n.X)
+		case *ast.ArrayLit:
+			for _, el := range n.Elements {
+				walk(el)
+			}
+		case *ast.ObjectLit:
+			for _, p := range n.Pairs {
+				walk(p.Value)
+			}
+		}
+	}
+
 	walk(expr)
 	sort.Strings(out)
 	return out

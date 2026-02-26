@@ -330,6 +330,7 @@ For each flow:
    * Compute **required variables** for that request invocation by scanning:
 
      * path params in the request path (`:group_id`)
+     * template placeholders in strings (`{{group_id}}`) across path/directives/json/hook print args
      * expressions inside directives (`auth bearer token`, headers, query values, json body expressions)
      * expressions in pre hook / post hook / request assertions / request lets
    * Check: each required variable identifier is in `DefinedVars`, unless it is:
@@ -422,9 +423,10 @@ Write an AST walker that collects identifier references from expressions, exclud
 * special names (`req`, `res`, `$`, `status`, `header`)
 * keywords
 
-For path params:
+For path params and string templates:
 
 * parse PATH string for occurrences of `/:<ident>` or `:<ident>` after `/`
+* parse string literals for `{{<ident>}}` placeholders
 * collect `<ident>` as required vars
 
 ---

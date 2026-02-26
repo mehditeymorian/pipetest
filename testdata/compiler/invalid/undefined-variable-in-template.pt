@@ -1,0 +1,5 @@
+req withTemplate:
+	GET /groups/{{group_id}}/orders
+
+flow "x":
+	withTemplate

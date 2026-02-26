@@ -50,6 +50,7 @@ func TestCompileInvalidDiagnostics(t *testing.T) {
 	}{
 		{name: "duplicate-request", entry: "../../testdata/compiler/invalid/duplicate-request-name.pt", files: []string{"../../testdata/compiler/invalid/duplicate-request-name.pt"}, golden: "../../testdata/compiler/golden/duplicate-request-name.errors.json"},
 		{name: "undefined-path-var", entry: "../../testdata/compiler/invalid/undefined-variable-in-path.pt", files: []string{"../../testdata/compiler/invalid/undefined-variable-in-path.pt"}, golden: "../../testdata/compiler/golden/undefined-variable-in-path.errors.json"},
+		{name: "undefined-template-var", entry: "../../testdata/compiler/invalid/undefined-variable-in-template.pt", files: []string{"../../testdata/compiler/invalid/undefined-variable-in-template.pt"}, golden: "../../testdata/compiler/golden/undefined-variable-in-template.errors.json"},
 		{name: "import-cycle", entry: "../../testdata/compiler/invalid/import-cycle-a.pt", files: []string{"../../testdata/compiler/invalid/import-cycle-a.pt", "../../testdata/compiler/invalid/import-cycle-b.pt"}, golden: "../../testdata/compiler/golden/import-cycle.errors.json"},
 	}
 	for _, tc := range cases {

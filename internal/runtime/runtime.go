@@ -485,6 +485,16 @@ func binaryOpString(op ast.BinaryOp) string {
 		return "contains"
 	case ast.BinaryIn:
 		return "in"
+	case ast.BinaryAdd:
+		return "+"
+	case ast.BinarySub:
+		return "-"
+	case ast.BinaryMul:
+		return "*"
+	case ast.BinaryDiv:
+		return "/"
+	case ast.BinaryMod:
+		return "%"
 	default:
 		return "?"
 	}
@@ -972,6 +982,68 @@ func evalExpr(expr ast.Expr, rctx requestContext) (any, error) {
 				}
 			}
 			return false, nil
+		case ast.BinaryAdd:
+			if ls, ok := left.(string); ok {
+				return ls + fmt.Sprint(right), nil
+			}
+			if rs, ok := right.(string); ok {
+				return fmt.Sprint(left) + rs, nil
+			}
+			l, err := asNumber(left)
+			if err != nil {
+				return nil, err
+			}
+			r, err := asNumber(right)
+			if err != nil {
+				return nil, err
+			}
+			return l + r, nil
+		case ast.BinarySub:
+			l, err := asNumber(left)
+			if err != nil {
+				return nil, err
+			}
+			r, err := asNumber(right)
+			if err != nil {
+				return nil, err
+			}
+			return l - r, nil
+		case ast.BinaryMul:
+			l, err := asNumber(left)
+			if err != nil {
+				return nil, err
+			}
+			r, err := asNumber(right)
+			if err != nil {
+				return nil, err
+			}
+			return l * r, nil
+		case ast.BinaryDiv:
+			l, err := asNumber(left)
+			if err != nil {
+				return nil, err
+			}
+			r, err := asNumber(right)
+			if err != nil {
+				return nil, err
+			}
+			if r == 0 {
+				return nil, fmt.Errorf("division by zero")
+			}
+			return l / r, nil
+		case ast.BinaryMod:
+			l, err := asNumber(left)
+			if err != nil {
+				return nil, err
+			}
+			r, err := asNumber(right)
+			if err != nil {
+				return nil, err
+			}
+			if r == 0 {
+				return nil, fmt.Errorf("modulo by zero")
+			}
+			return math.Mod(l, r), nil
 		}
 	case *ast.FieldExpr:
 		x, err := evalExpr(e.X, rctx)

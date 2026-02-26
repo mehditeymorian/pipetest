@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/mehditeymorian/pipetest/internal/compiler"
+	"github.com/mehditeymorian/pipetest/internal/diagnostics"
 	"github.com/mehditeymorian/pipetest/internal/parser"
 )
 
@@ -239,7 +240,7 @@ flow "print-flow":
 	}
 }
 
-func TestExecuteHookPrintfIntegerLiteralWithPercentD(t *testing.T) {
+func TestExecuteHookPrintfMathExpressionWithPercentD(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"ok":true}`))
@@ -252,7 +253,7 @@ base "` + srv.URL + `"
 req only:
 	GET /get
 	post hook {
-	  printf "status: %d\n", 2
+	  printf "sum 2 + 2 is %d", 2 + 2
 	}
 	? status == 200
 
@@ -267,8 +268,8 @@ flow "print-int":
 			t.Fatalf("expected no diagnostics, got %+v", result.Diags)
 		}
 	})
-	if !strings.Contains(out, "status: 2\n") {
-		t.Fatalf("expected integer formatted output, got %q", out)
+	if !strings.Contains(out, "sum 2 + 2 is 4") {
+		t.Fatalf("expected math-expression formatted output, got %q", out)
 	}
 	if strings.Contains(out, "%!d(") {
 		t.Fatalf("unexpected fmt mismatch output: %q", out)
@@ -388,7 +389,7 @@ flow "template-vars":
 	}
 }
 
-func TestExecuteTemplateVariablesMissingDiagnostic(t *testing.T) {
+func TestCompileTemplateVariablesMissingDiagnostic(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"ok":true}`))
@@ -405,17 +406,16 @@ req list_orders:
 flow "template-vars-missing":
 	list_orders
 `
-	plan := mustCompilePlan(t, "runtime-template-vars-missing.pt", src)
-	result := Execute(context.Background(), plan, Options{})
-	if len(result.Diags) == 0 {
+	_, diags := compilePlan(t, "runtime-template-vars-missing.pt", src)
+	if len(diags) == 0 {
 		t.Fatalf("expected diagnostics")
 	}
-	if result.Diags[0].Code != "E_RUNTIME_MISSING_VARIABLE" {
-		t.Fatalf("expected E_RUNTIME_MISSING_VARIABLE, got %s", result.Diags[0].Code)
+	if diags[0].Code != "E_SEM_UNDEFINED_VARIABLE" {
+		t.Fatalf("expected E_SEM_UNDEFINED_VARIABLE, got %s", diags[0].Code)
 	}
 }
 
-func TestExecuteHookPrintTemplateVariableMissingDiagnostic(t *testing.T) {
+func TestCompileHookPrintTemplateVariableMissingDiagnostic(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"ok":true}`))
@@ -435,13 +435,12 @@ req only:
 flow "print-template-vars-missing":
 	only
 `
-	plan := mustCompilePlan(t, "runtime-print-template-vars-missing.pt", src)
-	result := Execute(context.Background(), plan, Options{})
-	if len(result.Diags) == 0 {
+	_, diags := compilePlan(t, "runtime-print-template-vars-missing.pt", src)
+	if len(diags) == 0 {
 		t.Fatalf("expected diagnostics")
 	}
-	if result.Diags[0].Code != "E_RUNTIME_MISSING_VARIABLE" {
-		t.Fatalf("expected E_RUNTIME_MISSING_VARIABLE, got %s", result.Diags[0].Code)
+	if diags[0].Code != "E_SEM_UNDEFINED_VARIABLE" {
+		t.Fatalf("expected E_SEM_UNDEFINED_VARIABLE, got %s", diags[0].Code)
 	}
 }
 
@@ -471,13 +470,18 @@ func captureStdout(t *testing.T, fn func()) string {
 
 func mustCompilePlan(t *testing.T, path, src string) *compiler.Plan {
 	t.Helper()
-	prog, lexErrs, parseErrs := parser.Parse(path, src)
-	if len(lexErrs) != 0 || len(parseErrs) != 0 {
-		t.Fatalf("parse failed: lex=%+v parse=%+v", lexErrs, parseErrs)
-	}
-	plan, diags := compiler.Compile(path, []compiler.Module{{Path: path, Program: prog}})
+	plan, diags := compilePlan(t, path, src)
 	if len(diags) != 0 {
 		t.Fatalf("compile failed: %+v", diags)
 	}
 	return plan
+}
+
+func compilePlan(t *testing.T, path, src string) (*compiler.Plan, []diagnostics.Diagnostic) {
+	t.Helper()
+	prog, lexErrs, parseErrs := parser.Parse(path, src)
+	if len(lexErrs) != 0 || len(parseErrs) != 0 {
+		t.Fatalf("parse failed: lex=%+v parse=%+v", lexErrs, parseErrs)
+	}
+	return compiler.Compile(path, []compiler.Module{{Path: path, Program: prog}})
 }
